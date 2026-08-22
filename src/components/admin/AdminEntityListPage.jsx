@@ -26,6 +26,25 @@ const formatDate = (value) => {
 
 const upper = (v) => (v ? String(v).toUpperCase() : "");
 
+const getSpecializationNames = (profile) => {
+  const details = Array.isArray(profile?.specializationDetails)
+    ? profile.specializationDetails
+    : [];
+  const values = details.length ? details : profile?.specializations;
+  if (!Array.isArray(values)) return [];
+  return values
+    .map((value) => {
+      if (value && typeof value === "object") {
+        return value.name || value.label || value.type || value.code || "";
+      }
+      return String(value || "")
+        .replace(/_/g, " ")
+        .toLowerCase()
+        .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    })
+    .filter(Boolean);
+};
+
 const getStatusBadgeClass = (status) => {
   const s = upper(status);
   if (s === "APPROVED" || s === "ACTIVE" || s === "COMPLETED") return "custom-badge status-green";
@@ -165,17 +184,132 @@ const AdminEntityListPage = ({ entity }) => {
   const [withdrawalFeePercent, setWithdrawalFeePercent] = useState(null);
   const [withdrawalRejectReason, setWithdrawalRejectReason] = useState("");
 
-  const publicBaseUrl = useMemo(() => {
-    const base = getApiBaseUrl();
-    return base.replace(/\/api\/?$/, "");
-  }, []);
+  const [recordDetailsOpen, setRecordDetailsOpen] = useState(false);
+  const [recordDetails, setRecordDetails] = useState(null);
+  const [veterinarianReviewOpen, setVeterinarianReviewOpen] = useState(false);
+  const [veterinarianReview, setVeterinarianReview] = useState(null);
+
+  const apiBaseUrl = useMemo(() => getApiBaseUrl(), []);
+  const publicBaseUrl = useMemo(
+    () => apiBaseUrl.replace(/\/api\/?$/, ""),
+    [apiBaseUrl]
+  );
 
   const toPublicUrl = (value) => {
     if (!value) return "";
     const v = String(value);
     if (v.startsWith("http://") || v.startsWith("https://")) return v;
+    // Production proxies expose backend files below /api. Using this alias
+    // avoids routing a PDF request through the frontend host instead.
+    if (v.startsWith("/uploads/")) {
+      return `${apiBaseUrl}/uploads/${v.slice("/uploads/".length)}`;
+    }
     if (v.startsWith("/")) return `${publicBaseUrl}${v}`;
     return `${publicBaseUrl}/${v}`;
+  };
+
+  const openRecordDetails = (record) => {
+    if (!record) return;
+    if (entity === "veterinarians" || entity === "approvalsVets") {
+      setVeterinarianReview(record);
+      setVeterinarianReviewOpen(true);
+      return;
+    }
+    setRecordDetails(record);
+    setRecordDetailsOpen(true);
+  };
+
+  const isImageDocument = (url) =>
+    /\.(png|jpe?g|gif|webp|bmp)(\?.*)?$/i.test(String(url || ""));
+
+  const formatDetailLabel = (key) =>
+    String(key || "")
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+
+  const formatDocumentType = (type) => {
+    const labels = {
+      REGISTRATION_CERTIFICATE: "Registration certificate",
+      GOOD_STANDING_CERTIFICATE: "Certificate of good standing",
+      CURRICULUM_VITAE: "Curriculum vitae",
+      SPECIALIST_REGISTRATION: "Specialist registration",
+      DIGITAL_SIGNATURE: "Digital signature",
+      VERIFICATION_DOCUMENT: "Verification document",
+      LICENSE_DOCUMENT: "Professional licence",
+    };
+    return labels[upper(type)] || formatDetailLabel(type || "Verification document");
+  };
+
+  const veterinarianDocuments = useMemo(() => {
+    if (!veterinarianReview) return [];
+    const uploads = Array.isArray(veterinarianReview?.documentUploads)
+      ? veterinarianReview.documentUploads
+      : [];
+    const documents = uploads
+      .filter((document) => document?.fileUrl)
+      .map((document, index) => ({
+        id: document?._id || `${document?.fileUrl || index}-${index}`,
+        url: document.fileUrl,
+        type: document.type || "VERIFICATION_DOCUMENT",
+        name: document.originalName || `Verification document ${index + 1}`,
+        uploadedAt: document.uploadedAt,
+      }));
+    const licenceUrl = veterinarianReview?.veterinarianProfile?.licenseDocument;
+    if (licenceUrl && !documents.some((document) => document.url === licenceUrl)) {
+      documents.push({
+        id: `license-${licenceUrl}`,
+        url: licenceUrl,
+        type: "LICENSE_DOCUMENT",
+        name: "Professional licence",
+      });
+    }
+    return documents;
+  }, [veterinarianReview]);
+
+  const renderDetailValue = (value, depth = 0) => {
+    if (value === null || value === undefined || value === "") return "-";
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (
+      typeof value === "string" &&
+      (/^https?:\/\//i.test(value) || value.startsWith("/uploads/"))
+    ) {
+      return (
+        <a href={toPublicUrl(value)} target="_blank" rel="noreferrer">
+          Open link
+        </a>
+      );
+    }
+    if (Array.isArray(value)) {
+      if (!value.length) return "-";
+      return (
+        <div className="admin-detail-object">
+          {value.map((item, index) => (
+            <div className="admin-detail-object__row" key={item?._id || index}>
+              <span className="admin-detail-object__key">#{index + 1}</span>
+              <span>{renderDetailValue(item, depth + 1)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    if (typeof value === "object") {
+      if (depth > 2) return JSON.stringify(value);
+      return (
+        <div className="admin-detail-object">
+          {Object.entries(value)
+            .filter(([key]) => !["_id", "__v", "password"].includes(key))
+            .map(([key, nestedValue]) => (
+              <div className="admin-detail-object__row" key={key}>
+                <span className="admin-detail-object__key">{formatDetailLabel(key)}</span>
+                <span>{renderDetailValue(nestedValue, depth + 1)}</span>
+              </div>
+            ))}
+        </div>
+      );
+    }
+    if (typeof value === "string" && /At$/.test(String(value))) return formatDate(value);
+    return String(value);
   };
 
   const openAddProduct = () => {
@@ -593,6 +727,7 @@ const AdminEntityListPage = ({ entity }) => {
   };
 
   async function fetchData(overrides = {}) {
+    const silent = Boolean(overrides.silent);
     const nextPage = overrides.page ?? pagination.page ?? 1;
     const nextLimit = overrides.limit ?? pagination.limit ?? 10;
 
@@ -604,6 +739,7 @@ const AdminEntityListPage = ({ entity }) => {
     const isVaccines = entity === "vaccines";
     const isAppointments = entity === "appointments";
     const isReviews = entity === "reviews";
+    const isSubscriptions = entity === "subscriptions";
     const isSubscriptionPlans = entity === "subscriptionPlans";
     const isSpecializations = entity === "specializations";
     const isInsuranceCompanies = entity === "insuranceCompanies";
@@ -616,7 +752,7 @@ const AdminEntityListPage = ({ entity }) => {
     const isWithdrawals = entity === "withdrawals";
     const isPayments = entity === "payments";
 
-    if (!isUsers && !isVets && !isPetStoreApprovals && !isPets && !isMedicalRecords && !isVaccines && !isAppointments && !isReviews && !isSubscriptionPlans && !isSpecializations && !isInsuranceCompanies && !isAnnouncements && !isPetStores && !isProducts && !isOrders && !isTransactions && !isWithdrawals && !isPayments) {
+    if (!isUsers && !isVets && !isPetStoreApprovals && !isPets && !isMedicalRecords && !isVaccines && !isAppointments && !isReviews && !isSubscriptions && !isSubscriptionPlans && !isSpecializations && !isInsuranceCompanies && !isAnnouncements && !isPetStores && !isProducts && !isOrders && !isTransactions && !isWithdrawals && !isPayments) {
       const datasource = buildCommonDatasource(entity);
       setData(datasource);
       setPagination((prev) => ({
@@ -629,8 +765,10 @@ const AdminEntityListPage = ({ entity }) => {
       return;
     }
 
-    setError("");
-    setLoading(true);
+    if (!silent) {
+      setError("");
+      setLoading(true);
+    }
     try {
       if (isSubscriptionPlans) {
         const raw = await apiRequest("/subscription-plans", {
@@ -816,6 +954,18 @@ const AdminEntityListPage = ({ entity }) => {
               pageInfo: payload?.data?.pagination,
             }),
             clientSideSearch: Boolean(search),
+          }
+        : isSubscriptions
+        ? {
+            path: "/subscription",
+            params: {
+              page: nextPage,
+              limit: nextLimit,
+            },
+            unwrap: (payload) => ({
+              items: payload?.data?.subscriptions || [],
+              pageInfo: payload?.data?.pagination,
+            }),
           }
         : isInsuranceCompanies
         ? {
@@ -1150,11 +1300,15 @@ const AdminEntityListPage = ({ entity }) => {
         }));
       }
     } catch (e) {
-      setError(e?.message || "Failed to load data");
-      setData([]);
-      setPagination((prev) => ({ ...prev, total: 0, pages: 0 }));
+      if (!silent) {
+        setError(e?.message || "Failed to load data");
+        setData([]);
+        setPagination((prev) => ({ ...prev, total: 0, pages: 0 }));
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }
 
@@ -1592,6 +1746,8 @@ const AdminEntityListPage = ({ entity }) => {
         body: { veterinarianId: id },
       });
       await fetchData();
+      setVeterinarianReviewOpen(false);
+      window.dispatchEvent(new Event("pa-admin-data-changed"));
     } catch (e) {
       setError(e?.message || "Failed to approve veterinarian");
     } finally {
@@ -1609,6 +1765,8 @@ const AdminEntityListPage = ({ entity }) => {
         body: { veterinarianId: id, reason },
       });
       await fetchData();
+      setVeterinarianReviewOpen(false);
+      window.dispatchEvent(new Event("pa-admin-data-changed"));
     } catch (e) {
       setError(e?.message || "Failed to reject veterinarian");
     } finally {
@@ -1625,6 +1783,7 @@ const AdminEntityListPage = ({ entity }) => {
         body: { userId: id },
       });
       await fetchData();
+      window.dispatchEvent(new Event("pa-admin-data-changed"));
     } catch (e) {
       setError(e?.message || "Failed to approve account");
     } finally {
@@ -1642,6 +1801,7 @@ const AdminEntityListPage = ({ entity }) => {
         body: { userId: id, reason },
       });
       await fetchData();
+      window.dispatchEvent(new Event("pa-admin-data-changed"));
     } catch (e) {
       setError(e?.message || "Failed to reject account");
     } finally {
@@ -1920,6 +2080,50 @@ const AdminEntityListPage = ({ entity }) => {
               </button>
             </div>
           ),
+        },
+      ];
+    }
+
+    if (entity === "subscriptions") {
+      columns = [
+        {
+          title: "Veterinarian",
+          key: "veterinarian",
+          render: (_, record) =>
+            record?.veterinarianId?.name ||
+            record?.veterinarianId?.fullName ||
+            record?.veterinarianId?.email ||
+            "-",
+        },
+        {
+          title: "Plan",
+          key: "plan",
+          render: (_, record) => record?.subscriptionPlanId?.name || "-",
+        },
+        {
+          title: "Started",
+          dataIndex: "startDate",
+          render: (value) => formatDate(value),
+        },
+        {
+          title: "Expires",
+          dataIndex: "endDate",
+          render: (value) => formatDate(value),
+        },
+        {
+          title: "Status",
+          key: "status",
+          render: (_, record) => {
+            const isCurrent =
+              Boolean(record?.isActive) &&
+              record?.endDate &&
+              new Date(record.endDate) > new Date();
+            return (
+              <span className={getStatusBadgeClass(isCurrent ? "ACTIVE" : "EXPIRED")}>
+                {isCurrent ? "ACTIVE" : "EXPIRED"}
+              </span>
+            );
+          },
         },
       ];
     }
@@ -2456,20 +2660,19 @@ const AdminEntityListPage = ({ entity }) => {
           title: "Subscription",
           key: "subscription",
           render: (_, record) => {
-            const s =
-              record?.subscriptionStatus ||
-              record?.subscription?.status ||
-              record?.veterinarianProfile?.subscriptionStatus ||
+            const plan =
+              record?.subscription?.plan?.name ||
+              record?.subscription?.subscriptionPlanId?.name ||
               "";
-            return s ? upper(s) : "-";
+            const status = record?.subscriptionStatus || "";
+            return plan ? `${plan} (${upper(status) || "ACTIVE"})` : upper(status) || "-";
           },
         },
         {
           title: "Specializations",
           dataIndex: ["veterinarianProfile", "specializations"],
           render: (_, record) => {
-            const list = record?.veterinarianProfile?.specializations;
-            return Array.isArray(list) ? list.join(", ") : "";
+            return getSpecializationNames(record?.veterinarianProfile).join(", ");
           },
         },
         {
@@ -2865,6 +3068,71 @@ const AdminEntityListPage = ({ entity }) => {
     };
   }, [entity]);
 
+  const tableColumns = useMemo(() => {
+    const hasActions = columns.some(
+      (column) => column?.dataIndex === "actions" || column?.key === "actions"
+    );
+
+    const compactColumns = columns.map((column, index) => {
+      const isActionsColumn =
+        column?.dataIndex === "actions" || column?.key === "actions";
+
+      if (isActionsColumn) {
+        const originalRender = column.render;
+        return {
+          ...column,
+          width: 230,
+          render: (value, record, rowIndex) => (
+            <div className="admin-table-actions">
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-primary"
+                onClick={() => openRecordDetails(record)}
+              >
+                View
+              </button>
+              {originalRender ? originalRender(value, record, rowIndex) : null}
+            </div>
+          ),
+        };
+      }
+
+      const responsive =
+        index === 0
+          ? undefined
+          : index === 1
+            ? ["sm"]
+            : index === 2
+              ? ["xl"]
+              : ["xxl"];
+
+      return {
+        ...column,
+        responsive,
+        ellipsis: true,
+      };
+    });
+
+    if (!hasActions) {
+      compactColumns.push({
+        title: "",
+        key: "actions",
+        width: 90,
+        render: (_, record) => (
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-primary"
+            onClick={() => openRecordDetails(record)}
+          >
+            View
+          </button>
+        ),
+      });
+    }
+
+    return compactColumns;
+  }, [columns, entity]);
+
   useEffect(() => {
     setIsResetting(true);
     setPagination({ page: 1, limit: 10, total: 0, pages: 0 });
@@ -2956,6 +3224,25 @@ const AdminEntityListPage = ({ entity }) => {
     transactionToDateFilter,
     withdrawalStatusFilter,
   ]);
+
+  const autoRefreshRef = useRef(null);
+  autoRefreshRef.current = () => fetchData({ silent: true });
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        autoRefreshRef.current?.();
+      }
+    };
+
+    const intervalId = window.setInterval(refreshWhenVisible, 30000);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, []);
 
   const handleClearFilters = () => {
     setIsResetting(true);
@@ -3779,7 +4066,7 @@ const AdminEntityListPage = ({ entity }) => {
                                   <img src={plusicon} alt="#" />
                                 </Link>
                               ) : null}
-                              {(entity === "users" || entity === "veterinarians" || entity === "approvalsVets" || entity === "approvalsPetStores" || entity === "pets" || entity === "medicalRecords" || entity === "vaccines" || entity === "appointments" || entity === "reviews" || entity === "subscriptionPlans" || entity === "specializations" || entity === "insuranceCompanies" || entity === "announcements" || entity === "petStores" || entity === "products" || entity === "orders" || entity === "transactions" || entity === "payments" || entity === "withdrawals") ? (
+                              {(entity === "users" || entity === "veterinarians" || entity === "approvalsVets" || entity === "approvalsPetStores" || entity === "pets" || entity === "medicalRecords" || entity === "vaccines" || entity === "appointments" || entity === "reviews" || entity === "subscriptions" || entity === "subscriptionPlans" || entity === "specializations" || entity === "insuranceCompanies" || entity === "announcements" || entity === "petStores" || entity === "products" || entity === "orders" || entity === "transactions" || entity === "payments" || entity === "withdrawals") ? (
                                 <button
                                   type="button"
                                   className="btn btn-secondary ms-2"
@@ -3807,7 +4094,7 @@ const AdminEntityListPage = ({ entity }) => {
                     </div>
                   </div>
 
-                  <div className="table-responsive doctor-list">
+                  <div className="table-responsive doctor-list admin-table-responsive">
                     {error ? (
                       <div className="alert alert-danger" role="alert">
                         {error}
@@ -3831,10 +4118,11 @@ const AdminEntityListPage = ({ entity }) => {
                           }));
                         },
                       }}
-                      columns={columns}
+                      columns={tableColumns}
                       dataSource={datasource}
                       rowSelection={rowSelection}
                       rowKey={(record) => record?.id || record?._id}
+                      tableLayout="fixed"
                     />
                   </div>
                 </div>
@@ -3843,6 +4131,204 @@ const AdminEntityListPage = ({ entity }) => {
           </div>
         </div>
       </div>
+
+      <Modal
+        open={recordDetailsOpen}
+        title={`${pageTitle} details`}
+        width={820}
+        onCancel={() => {
+          setRecordDetailsOpen(false);
+          setRecordDetails(null);
+        }}
+        footer={
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+              setRecordDetailsOpen(false);
+              setRecordDetails(null);
+            }}
+          >
+            Close
+          </button>
+        }
+        destroyOnClose
+      >
+        <div className="admin-detail-grid">
+          {Object.entries(recordDetails || {})
+            .filter(([key]) => !["_id", "__v", "password"].includes(key))
+            .map(([key, value]) => (
+              <div
+                className={`admin-detail-item ${typeof value === "object" ? "admin-detail-item--wide" : ""}`}
+                key={key}
+              >
+                <span className="admin-detail-label">{formatDetailLabel(key)}</span>
+                <div className="admin-detail-value">
+                  {/(At|Date)$/.test(key) && typeof value === "string"
+                    ? formatDate(value)
+                    : renderDetailValue(value)}
+                </div>
+              </div>
+            ))}
+        </div>
+      </Modal>
+
+      <Modal
+        open={veterinarianReviewOpen}
+        title="Veterinarian application review"
+        width={900}
+        onCancel={() => {
+          setVeterinarianReviewOpen(false);
+          setVeterinarianReview(null);
+        }}
+        footer={
+          <div className="admin-table-actions">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                setVeterinarianReviewOpen(false);
+                setVeterinarianReview(null);
+              }}
+            >
+              Close
+            </button>
+            {entity === "approvalsVets" ? (
+              <>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  disabled={loading}
+                  onClick={() => handleRejectVet(veterinarianReview?._id)}
+                >
+                  Reject
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-success"
+                  disabled={loading}
+                  onClick={() => handleApproveVet(veterinarianReview?._id)}
+                >
+                  Approve
+                </button>
+              </>
+            ) : null}
+          </div>
+        }
+        destroyOnClose
+      >
+        <div className="admin-detail-grid">
+          <div className="admin-detail-item">
+            <span className="admin-detail-label">Veterinarian</span>
+            <div className="admin-detail-value">{veterinarianReview?.name || veterinarianReview?.fullName || "-"}</div>
+          </div>
+          <div className="admin-detail-item">
+            <span className="admin-detail-label">Status</span>
+            <div className="admin-detail-value">
+              <span className={getStatusBadgeClass(veterinarianReview?.status)}>
+                {upper(veterinarianReview?.status) || "-"}
+              </span>
+            </div>
+          </div>
+          <div className="admin-detail-item">
+            <span className="admin-detail-label">Email</span>
+            <div className="admin-detail-value">{veterinarianReview?.email || "-"}</div>
+          </div>
+          <div className="admin-detail-item">
+            <span className="admin-detail-label">Phone</span>
+            <div className="admin-detail-value">{veterinarianReview?.phone || "-"}</div>
+          </div>
+          <div className="admin-detail-item">
+            <span className="admin-detail-label">Licence number</span>
+            <div className="admin-detail-value">{veterinarianReview?.veterinarianProfile?.licenseNumber || "-"}</div>
+          </div>
+          <div className="admin-detail-item">
+            <span className="admin-detail-label">Experience</span>
+            <div className="admin-detail-value">
+              {veterinarianReview?.veterinarianProfile?.experienceYears !== null &&
+              veterinarianReview?.veterinarianProfile?.experienceYears !== undefined
+                ? `${veterinarianReview.veterinarianProfile.experienceYears} years`
+                : "-"}
+            </div>
+          </div>
+          <div className="admin-detail-item admin-detail-item--wide">
+            <span className="admin-detail-label">Purchased subscription</span>
+            <div className="admin-detail-value">
+              {veterinarianReview?.subscription?.plan?.name ? (
+                <>
+                  <strong>{veterinarianReview.subscription.plan.name}</strong>
+                  {veterinarianReview.subscription.plan.price !== null &&
+                  veterinarianReview.subscription.plan.price !== undefined
+                    ? ` · €${veterinarianReview.subscription.plan.price}`
+                    : ""}
+                  {veterinarianReview.subscription.startDate
+                    ? ` · Started ${formatDate(veterinarianReview.subscription.startDate)}`
+                    : ""}
+                  {veterinarianReview.subscription.endDate
+                    ? ` · Expires ${formatDate(veterinarianReview.subscription.endDate)}`
+                    : ""}
+                </>
+              ) : (
+                <span>No active subscription.</span>
+              )}
+            </div>
+          </div>
+          <div className="admin-detail-item admin-detail-item--wide">
+            <span className="admin-detail-label">Specializations</span>
+            <div className="admin-detail-value">
+              {getSpecializationNames(veterinarianReview?.veterinarianProfile).length
+                ? getSpecializationNames(veterinarianReview?.veterinarianProfile).join(", ")
+                : "-"}
+            </div>
+          </div>
+          <div className="admin-detail-item admin-detail-item--wide">
+            <span className="admin-detail-label">Registration documents</span>
+            <div className="admin-detail-value">
+              {veterinarianDocuments.length ? (
+                <div className="admin-document-list">
+                  {veterinarianDocuments.map((document) => {
+                    const documentUrl = toPublicUrl(document.url);
+                    return (
+                      <div className="admin-document-card" key={document.id}>
+                        {isImageDocument(document.url) ? (
+                          <img
+                            className="admin-document-card__preview"
+                            src={documentUrl}
+                            alt={document.name}
+                          />
+                        ) : (
+                          <span className="admin-document-card__preview d-flex align-items-center justify-content-center">
+                            <i className="fa-solid fa-file-lines" aria-hidden="true" />
+                          </span>
+                        )}
+                        <div className="admin-document-card__meta">
+                          <div className="admin-document-card__name" title={document.name}>
+                            {document.name}
+                          </div>
+                          <div className="admin-document-card__type">
+                            {formatDocumentType(document.type)}
+                            {document.uploadedAt ? ` · ${formatDate(document.uploadedAt)}` : ""}
+                          </div>
+                        </div>
+                        <a
+                          href={documentUrl}
+                          className="btn btn-sm btn-outline-primary"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <span>No registration documents have been uploaded.</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         open={productModalOpen}
@@ -4156,6 +4642,9 @@ const AdminEntityListPage = ({ entity }) => {
           onChange={(v) => setWithdrawalFeePercent(v)}
         />
         <div className="mt-3">
+          <div className="mb-2 text-muted">
+            The fee is withheld from the requested payout. The veterinarian wallet is debited only by the requested amount.
+          </div>
           {(() => {
             const amount = Number(withdrawalActing?.amount || 0);
             const pct = withdrawalFeePercent === null || withdrawalFeePercent === undefined || withdrawalFeePercent === "" ? 0 : Number(withdrawalFeePercent);

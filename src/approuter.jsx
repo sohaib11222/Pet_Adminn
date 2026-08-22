@@ -15,9 +15,12 @@ import EditProfile from "./components/pages/login/EditProfile";
 import BlankPage from "./components/pages/login/BlankPage";
 import Admin_Dashboard from "./components/Dashboard/Admin_Dashboard/Admin_Dashboard";
 import AdminEntityListPage from "./components/admin/AdminEntityListPage";
+import AdminDoctorChat from "./components/admin/AdminDoctorChat";
 import SettingsChangePassword from "./components/settings/SettingsChangePassword";
 import RequireAdmin from "./components/auth/RequireAdmin";
 import Logout from "./components/auth/Logout";
+import AdminGoogleTranslate from "./components/admin/AdminGoogleTranslate";
+import { AdminNotificationsProvider } from "./components/admin/AdminNotificationsContext";
 
 //Accounts
 const Approuter = () => {
@@ -26,7 +29,9 @@ const Approuter = () => {
   return (
     <>
       <BrowserRouter basename="/">
-        <Routes>
+        <AdminNotificationsProvider>
+          <AdminGoogleTranslate />
+          <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgotpassword" element={<ForgotPassword />} />
@@ -47,6 +52,14 @@ const Approuter = () => {
             element={
               <RequireAdmin>
                 <Admin_Dashboard />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin-messages"
+            element={
+              <RequireAdmin>
+                <AdminDoctorChat />
               </RequireAdmin>
             }
           />
@@ -226,7 +239,8 @@ const Approuter = () => {
               </RequireAdmin>
             }
           />
-        </Routes>
+          </Routes>
+        </AdminNotificationsProvider>
       </BrowserRouter>
       <div className="sidebar-overlay"></div>
     </>

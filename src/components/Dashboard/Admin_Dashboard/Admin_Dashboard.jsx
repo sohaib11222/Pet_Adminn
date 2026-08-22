@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 import Sidebar from "../../Sidebar";
 import Header from "../../Header";
@@ -25,42 +25,52 @@ const Admin_Dashboard = () => {
 
   const currentUser = useMemo(() => getCurrentUser(), []);
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function load() {
+  const loadDashboard = useCallback(async (silent = false) => {
+    if (!silent) {
       setError("");
       setLoading(true);
-      try {
-        const [dashRes, apptRes, petRes, vetsRes] = await Promise.all([
-          apiRequest("/admin/dashboard"),
-          apiRequest("/admin/appointments", { params: { page: 1, limit: 5 } }),
-          apiRequest("/admin/pets", { params: { page: 1, limit: 5 } }),
-          apiRequest("/users/veterinarians", {
-            params: { page: 1, limit: 5, status: "APPROVED" },
-          }),
-        ]);
+    }
+    try {
+      const [dashRes, apptRes, petRes, vetsRes] = await Promise.all([
+        apiRequest("/admin/dashboard"),
+        apiRequest("/admin/appointments", { params: { page: 1, limit: 5 } }),
+        apiRequest("/admin/pets", { params: { page: 1, limit: 5 } }),
+        apiRequest("/users/veterinarians", {
+          params: { page: 1, limit: 5, status: "APPROVED" },
+        }),
+      ]);
 
-        if (!mounted) return;
-        setStats(dashRes?.data || null);
-        setRecentAppointments(apptRes?.data?.appointments || []);
-        setRecentPets(petRes?.data?.pets || []);
-        setRecentVets(vetsRes?.data?.veterinarians || []);
-      } catch (e) {
-        if (!mounted) return;
+      setStats(dashRes?.data || null);
+      setRecentAppointments(apptRes?.data?.appointments || []);
+      setRecentPets(petRes?.data?.pets || []);
+      setRecentVets(vetsRes?.data?.veterinarians || []);
+    } catch (e) {
+      if (!silent) {
         setError(e?.message || "Failed to load dashboard");
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+      }
+    } finally {
+      if (!silent) {
+        setLoading(false);
       }
     }
-
-    load();
-    return () => {
-      mounted = false;
-    };
   }, []);
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        loadDashboard(true);
+      }
+    };
+
+    loadDashboard();
+    const intervalId = window.setInterval(refreshWhenVisible, 30000);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [loadDashboard]);
 
   const statsAppointments = Number(stats?.totalAppointments || 0);
   const statsPetOwners = Number(stats?.totalPetOwners || 0);
@@ -107,7 +117,7 @@ const Admin_Dashboard = () => {
                     </Link>
                   </div>
                   <div className="card-block table-dash">
-                    <div className="table-responsive">
+                    <div className="table-responsive admin-dashboard-table-wrap">
                       <table className="table mb-0 border-0 datatable custom-table">
                         <thead>
                           <tr>
@@ -300,7 +310,7 @@ const Admin_Dashboard = () => {
                     </Link>
                   </div>
                   <div className="card-body p-0 table-dash">
-                    <div className="table-responsive">
+                    <div className="table-responsive admin-dashboard-table-wrap">
                       <table className="table mb-0 border-0 datatable custom-table">
                         <thead>
                           <tr>
@@ -408,7 +418,7 @@ const Admin_Dashboard = () => {
                     </Link>
                   </div>
                   <div className="card-block table-dash">
-                    <div className="table-responsive">
+                    <div className="table-responsive admin-dashboard-table-wrap">
                       <table className="table mb-0 border-0 datatable custom-table">
                         <thead>
                           <tr>

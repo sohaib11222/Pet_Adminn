@@ -8,6 +8,7 @@ import Approuter from "./approuter";
 import 'bootstrap/dist/css/bootstrap.min.css';
 //CSS & Bootstrap
 import "./assets/css/style.css";
+import "./assets/css/admin-enhancements.css";
 //  import "./assets/js/bootstrap.bundle.min.js";
 import "./assets/css/select2.min.css";
 //Font Awesome

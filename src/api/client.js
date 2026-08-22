@@ -14,12 +14,14 @@ export const setAuthSession = ({ token, refreshToken, user }) => {
   if (token) localStorage.setItem("pa_token", token);
   if (refreshToken) localStorage.setItem("pa_refresh_token", refreshToken);
   if (user) localStorage.setItem("pa_user", JSON.stringify(user));
+  window.dispatchEvent(new Event("pa-auth-changed"));
 };
 
 export const clearAuthSession = () => {
   localStorage.removeItem("pa_token");
   localStorage.removeItem("pa_refresh_token");
   localStorage.removeItem("pa_user");
+  window.dispatchEvent(new Event("pa-auth-changed"));
 };
 
 export const getCurrentUser = () => {
