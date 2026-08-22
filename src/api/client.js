@@ -1,4 +1,7 @@
-const DEFAULT_API_BASE_URL = "http://157.180.108.156:5000/api";
+// Keep the Admin on the same HTTPS API origin as the public veterinary site.
+// The previous HTTP IP address is blocked by browsers when this Admin is served
+// over HTTPS, which surfaces to users as the generic "Failed to fetch" error.
+const DEFAULT_API_BASE_URL = "https://web.mypetplus.it/api";
 
 export const getApiBaseUrl = () => {
   const envUrl = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_API_URL;
