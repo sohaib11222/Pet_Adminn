@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import PropTypes from "prop-types";
 
 import Header from "../Header";
 import Sidebar from "../Sidebar";
@@ -10,8 +11,8 @@ const avatarInitial = (person) =>
     .charAt(0)
     .toUpperCase();
 
-const displayName = (person) =>
-  person?.name || person?.fullName || person?.email || "Veterinarian";
+const displayName = (person, fallback = "Veterinarian") =>
+  person?.name || person?.fullName || person?.email || fallback;
 
 const formatTime = (value) => {
   if (!value) return "";
@@ -32,7 +33,7 @@ const isImage = (attachment) => {
   );
 };
 
-const AdminDoctorChat = () => {
+const AdminDoctorChat = ({ businessMode = false }) => {
   const currentUser = useMemo(() => getCurrentUser(), []);
   const currentUserId = currentUser?._id || currentUser?.id;
   const apiBaseUrl = useMemo(() => getApiBaseUrl(), []);
@@ -42,7 +43,8 @@ const AdminDoctorChat = () => {
   );
 
   const [conversations, setConversations] = useState([]);
-  const [veterinarians, setVeterinarians] = useState([]);
+  const [supportUsers, setSupportUsers] = useState([]);
+  const [businessFilter, setBusinessFilter] = useState("PET_STORE");
   const [selectedConversationId, setSelectedConversationId] = useState("");
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
@@ -52,6 +54,21 @@ const AdminDoctorChat = () => {
   const [uploading, setUploading] = useState(false);
   const [startingConversation, setStartingConversation] = useState(false);
   const [error, setError] = useState("");
+
+  const conversationTypes = useMemo(
+    () =>
+      businessMode
+        ? [businessFilter === "PARAPHARMACY" ? "ADMIN_PARAPHARMACY" : "ADMIN_PET_STORE"]
+        : ["ADMIN_VETERINARIAN"],
+    [businessFilter, businessMode]
+  );
+  const participantField = businessMode ? "businessId" : "veterinarianId";
+  const participantLabel = businessMode
+    ? businessFilter === "PARAPHARMACY"
+      ? "Parapharmacy"
+      : "Pharmacy"
+    : "Veterinarian";
+  const messagesTitle = businessMode ? "Pharmacy / Parapharmacy Messages" : "Doctor Messages";
 
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -79,7 +96,7 @@ const AdminDoctorChat = () => {
         const list = response?.data?.conversations || [];
         const adminConversations = list.filter(
           (conversation) =>
-            conversation?.conversationType === "ADMIN_VETERINARIAN"
+            conversationTypes.includes(conversation?.conversationType)
         );
         setConversations(adminConversations);
         setSelectedConversationId((current) => {
@@ -101,19 +118,24 @@ const AdminDoctorChat = () => {
         if (!silent) setLoadingConversations(false);
       }
     },
-    []
+    [conversationTypes]
   );
 
-  const loadVeterinarians = useCallback(async () => {
+  const loadSupportUsers = useCallback(async () => {
     try {
-      const response = await apiRequest("/users/veterinarians", {
-        params: { page: 1, limit: 100, status: "APPROVED" },
-      });
-      setVeterinarians(response?.data?.veterinarians || []);
+      const response = await apiRequest(
+        businessMode ? "/users" : "/users/veterinarians",
+        {
+          params: businessMode
+            ? { page: 1, limit: 100, status: "APPROVED", role: businessFilter }
+            : { page: 1, limit: 100, status: "APPROVED" },
+        }
+      );
+      setSupportUsers(response?.data?.users || response?.data?.veterinarians || []);
     } catch {
       // Conversation history remains usable if the picker request is unavailable.
     }
-  }, []);
+  }, [businessFilter, businessMode]);
 
   const loadMessages = useCallback(async (conversationId, silent = false) => {
     if (!conversationId) {
@@ -137,10 +159,10 @@ const AdminDoctorChat = () => {
 
   useEffect(() => {
     loadConversations();
-    loadVeterinarians();
+    loadSupportUsers();
     const intervalId = window.setInterval(() => loadConversations(true), 5000);
     return () => window.clearInterval(intervalId);
-  }, [loadConversations, loadVeterinarians]);
+  }, [loadConversations, loadSupportUsers]);
 
   useEffect(() => {
     loadMessages(selectedConversationId);
@@ -177,14 +199,14 @@ const AdminDoctorChat = () => {
       String(conversation?._id) === String(selectedConversationId)
   );
 
-  const startConversation = async (veterinarianId) => {
-    if (!veterinarianId) return;
+  const startConversation = async (participantId) => {
+    if (!participantId) return;
     setStartingConversation(true);
     setError("");
     try {
       const response = await apiRequest("/chat/conversation", {
         method: "POST",
-        body: { veterinarianId },
+        body: { [participantField]: participantId },
       });
       const conversation = response?.data;
       if (!conversation?._id) {
@@ -202,11 +224,11 @@ const AdminDoctorChat = () => {
   const sendMessage = async (attachments = []) => {
     const text = message.trim();
     if (!text && attachments.length === 0) return;
-    const veterinarianId =
-      selectedConversation?.veterinarianId?._id ||
-      selectedConversation?.veterinarianId;
-    if (!selectedConversationId || !veterinarianId) {
-      setError("Choose or start a veterinarian conversation first.");
+    const participantId =
+      selectedConversation?.[participantField]?._id ||
+      selectedConversation?.[participantField];
+    if (!selectedConversationId || !participantId) {
+      setError(`Choose or start a ${participantLabel.toLowerCase()} conversation first.`);
       return;
     }
 
@@ -217,7 +239,7 @@ const AdminDoctorChat = () => {
         method: "POST",
         body: {
           conversationId: selectedConversationId,
-          veterinarianId,
+          [participantField]: participantId,
           message: text || undefined,
           type: attachments.length ? "FILE" : "TEXT",
           attachments,
@@ -239,7 +261,7 @@ const AdminDoctorChat = () => {
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
     if (!selectedConversationId) {
-      setError("Choose or start a veterinarian conversation before attaching files.");
+      setError(`Choose or start a ${participantLabel.toLowerCase()} conversation before attaching files.`);
       event.target.value = "";
       return;
     }
@@ -303,23 +325,38 @@ const AdminDoctorChat = () => {
         <div className="content admin-chat-page">
           <div className="page-header">
             <div>
-              <h3>Doctor Messages</h3>
-              <p>Secure conversations and file sharing with veterinarians.</p>
+              <h3>{messagesTitle}</h3>
+              <p>
+                {businessMode
+                  ? "Secure conversations and file sharing with pharmacies and parapharmacies."
+                  : "Secure conversations and file sharing with veterinarians."}
+              </p>
             </div>
+            {businessMode ? (
+              <select
+                className="form-select admin-chat-start-select"
+                value={businessFilter}
+                onChange={(event) => setBusinessFilter(event.target.value)}
+                aria-label="Choose Pharmacy or Parapharmacy conversations"
+              >
+                <option value="PET_STORE">Pharmacy</option>
+                <option value="PARAPHARMACY">Parapharmacy</option>
+              </select>
+            ) : null}
             <select
               className="form-select admin-chat-start-select"
               defaultValue=""
               disabled={startingConversation}
               onChange={(event) => {
-                const veterinarianId = event.target.value;
+                const participantId = event.target.value;
                 event.target.value = "";
-                startConversation(veterinarianId);
+                startConversation(participantId);
               }}
             >
-              <option value="">Start a conversation with a veterinarian</option>
-              {veterinarians.map((veterinarian) => (
-                <option key={veterinarian._id} value={veterinarian._id}>
-                  {displayName(veterinarian)}
+              <option value="">Start a conversation with a {participantLabel.toLowerCase()}</option>
+              {supportUsers.map((supportUser) => (
+                <option key={supportUser._id} value={supportUser._id}>
+                  {displayName(supportUser, participantLabel)}
                 </option>
               ))}
             </select>
@@ -334,7 +371,7 @@ const AdminDoctorChat = () => {
                 <div className="admin-chat-empty">Loading conversations…</div>
               ) : conversations.length ? (
                 conversations.map((conversation) => {
-                  const veterinarian = conversation?.veterinarianId;
+                  const participant = conversation?.[participantField];
                   const isSelected =
                     String(conversation?._id) === String(selectedConversationId);
                   return (
@@ -344,10 +381,10 @@ const AdminDoctorChat = () => {
                       key={conversation._id}
                       onClick={() => setSelectedConversationId(conversation._id)}
                     >
-                      <span className="admin-chat-avatar">{avatarInitial(veterinarian)}</span>
+                      <span className="admin-chat-avatar">{avatarInitial(participant)}</span>
                       <span className="admin-chat-conversation-main">
                         <span className="admin-chat-conversation-name">
-                          {displayName(veterinarian)}
+                          {displayName(participant, participantLabel)}
                         </span>
                         <span className="admin-chat-conversation-preview">
                           {conversation?.lastMessage?.message || "No messages yet"}
@@ -364,7 +401,7 @@ const AdminDoctorChat = () => {
                 })
               ) : (
                 <div className="admin-chat-empty">
-                  No Doctor messages yet. Start one using the selector above.
+                  No {participantLabel.toLowerCase()} messages yet. Start one using the selector above.
                 </div>
               )}
             </aside>
@@ -374,11 +411,11 @@ const AdminDoctorChat = () => {
                 <>
                   <header className="admin-chat-thread-header">
                     <span className="admin-chat-avatar">
-                      {avatarInitial(selectedConversation.veterinarianId)}
+                      {avatarInitial(selectedConversation[participantField])}
                     </span>
                     <span>
-                      <strong>{displayName(selectedConversation.veterinarianId)}</strong>
-                      <small>Veterinarian</small>
+                      <strong>{displayName(selectedConversation[participantField], participantLabel)}</strong>
+                      <small>{participantLabel}</small>
                     </span>
                   </header>
                   <div className="admin-chat-messages">
@@ -474,7 +511,7 @@ const AdminDoctorChat = () => {
                 </>
               ) : (
                 <div className="admin-chat-empty admin-chat-empty--thread">
-                  Select a conversation or start a new Doctor conversation.
+                  Select a conversation or start a new {participantLabel.toLowerCase()} conversation.
                 </div>
               )}
             </section>
@@ -483,6 +520,10 @@ const AdminDoctorChat = () => {
       </div>
     </>
   );
+};
+
+AdminDoctorChat.propTypes = {
+  businessMode: PropTypes.bool,
 };
 
 export default AdminDoctorChat;

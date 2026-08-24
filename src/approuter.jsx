@@ -64,6 +64,14 @@ const Approuter = () => {
             }
           />
           <Route
+            path="/pharmacy-parapharmacy-messages"
+            element={
+              <RequireAdmin>
+                <AdminDoctorChat businessMode />
+              </RequireAdmin>
+            }
+          />
+          <Route
             path="/approvals/veterinarians"
             element={
               <RequireAdmin>

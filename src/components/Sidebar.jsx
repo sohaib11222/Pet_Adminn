@@ -184,6 +184,14 @@ const Sidebar = (props) => {
                     <span>Doctor Messages</span>
                   </Link>
                 </li>
+                <li>
+                  <Link className={isActive('/pharmacy-parapharmacy-messages') ? 'active' : ''} to="/pharmacy-parapharmacy-messages">
+                    <span className="menu-side">
+                      <i className="fa-solid fa-store" />
+                    </span>{" "}
+                    <span>Pharmacy / Parapharmacy Messages</span>
+                  </Link>
+                </li>
 
                 <li className="menu-title">Commerce</li>
                 <li>
