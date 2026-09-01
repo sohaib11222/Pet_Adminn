@@ -16,6 +16,8 @@ import BlankPage from "./components/pages/login/BlankPage";
 import Admin_Dashboard from "./components/Dashboard/Admin_Dashboard/Admin_Dashboard";
 import AdminEntityListPage from "./components/admin/AdminEntityListPage";
 import AdminDoctorChat from "./components/admin/AdminDoctorChat";
+import AdminSupportTickets from "./components/support/AdminSupportTickets";
+import AdminSupportTicketDetail from "./components/support/AdminSupportTicketDetail";
 import SettingsChangePassword from "./components/settings/SettingsChangePassword";
 import RequireAdmin from "./components/auth/RequireAdmin";
 import Logout from "./components/auth/Logout";
@@ -68,6 +70,22 @@ const Approuter = () => {
             element={
               <RequireAdmin>
                 <AdminDoctorChat businessMode />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/support-tickets"
+            element={
+              <RequireAdmin>
+                <AdminSupportTickets />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/support-tickets/:ticketId"
+            element={
+              <RequireAdmin>
+                <AdminSupportTicketDetail />
               </RequireAdmin>
             }
           />

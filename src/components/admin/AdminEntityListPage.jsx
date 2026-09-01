@@ -579,30 +579,9 @@ const AdminEntityListPage = ({ entity }) => {
 
   const openApproveWithdrawal = (record) => {
     if (!record?._id) return;
-    const r = String(record?.userId?.role || record?.userRole || record?.role || "").toUpperCase();
-    if (r === "PET_STORE") {
-      const ok = window.confirm("Approve this PET_STORE withdrawal request? (No withdrawal fee will be applied)");
-      if (!ok) return;
-      handleApproveWithdrawalDirect(record?._id);
-      return;
-    }
     setWithdrawalActing(record);
     setWithdrawalFeePercent(null);
     setWithdrawalApproveOpen(true);
-  };
-
-  const handleApproveWithdrawalDirect = async (id) => {
-    if (!id) return;
-    setWithdrawalActingLoading(true);
-    setError("");
-    try {
-      await apiRequest(`/balance/withdraw/${id}/approve`, { method: "POST", body: {} });
-      await fetchData();
-    } catch (e) {
-      setError(e?.message || "Failed to approve withdrawal");
-    } finally {
-      setWithdrawalActingLoading(false);
-    }
   };
 
   const openRejectWithdrawal = (record) => {
@@ -3029,6 +3008,21 @@ const AdminEntityListPage = ({ entity }) => {
           dataIndex: "amount",
         },
         {
+          title: "Method",
+          dataIndex: "paymentMethod",
+          render: (value) => upper(value) || "-",
+        },
+        {
+          title: "Stripe account",
+          dataIndex: "stripeAccountId",
+          render: (value) => value || "-",
+        },
+        {
+          title: "Net payout",
+          dataIndex: "netAmount",
+          render: (value) => (value === null || value === undefined ? "-" : Number(value).toFixed(2)),
+        },
+        {
           title: "Status",
           dataIndex: "status",
           render: (value) => <span className={getStatusBadgeClass(value)}>{upper(value) || "-"}</span>,
@@ -3042,10 +3036,10 @@ const AdminEntityListPage = ({ entity }) => {
           dataIndex: "actions",
           render: (_, record) => (
             <div className="text-end">
-              {upper(record?.status) === "PENDING" ? (
+              {["PENDING", "FAILED"].includes(upper(record?.status)) ? (
                 <div className="d-inline-flex gap-2">
                   <button type="button" className="btn btn-sm btn-success" onClick={() => openApproveWithdrawal(record)}>
-                    Approve
+                    {upper(record?.status) === "FAILED" ? "Retry payout" : "Approve"}
                   </button>
                   <button type="button" className="btn btn-sm btn-danger" onClick={() => openRejectWithdrawal(record)}>
                     Reject
@@ -3655,7 +3649,9 @@ const AdminEntityListPage = ({ entity }) => {
                                 >
                                   <option value="">All</option>
                                   <option value="PENDING">PENDING</option>
+                                  <option value="PROCESSING">PROCESSING</option>
                                   <option value="APPROVED">APPROVED</option>
+                                  <option value="FAILED">FAILED</option>
                                   <option value="REJECTED">REJECTED</option>
                                   <option value="COMPLETED">COMPLETED</option>
                                 </select>
@@ -4633,6 +4629,9 @@ const AdminEntityListPage = ({ entity }) => {
       >
         <div className="mb-2"><strong>Request ID:</strong> {withdrawalActing?._id}</div>
         <div className="mb-2"><strong>Amount:</strong> {withdrawalActing?.amount}</div>
+        {upper(withdrawalActing?.paymentMethod) === "STRIPE" ? (
+          <div className="mb-2"><strong>Stripe Connected Account:</strong> {withdrawalActing?.stripeAccountId || "Missing"}</div>
+        ) : null}
         <div className="mb-2">Withdrawal fee percent (optional)</div>
         <InputNumber
           min={0}

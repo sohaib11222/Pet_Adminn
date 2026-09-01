@@ -21,6 +21,7 @@ const Sidebar = (props) => {
       ["/medical-records", "medicalRecords"],
       ["/vaccines", "vaccines"],
       ["/appointments", "appointments"],
+      ["/support-tickets", "supportTickets"],
       ["/pet-stores", "petStores"],
       ["/products", "products"],
       ["/orders", "orders"],
@@ -190,6 +191,15 @@ const Sidebar = (props) => {
                       <i className="fa-solid fa-store" />
                     </span>{" "}
                     <span>Pharmacy / Parapharmacy Messages</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link className={isActive('/support-tickets') ? 'active' : ''} to="/support-tickets">
+                    <span className="menu-side">
+                      <i className="fa-solid fa-headset" />
+                    </span>{" "}
+                    <span>Support Tickets</span>
+                    {renderIndicator("supportTickets")}
                   </Link>
                 </li>
 
