@@ -18,6 +18,8 @@ import AdminEntityListPage from "./components/admin/AdminEntityListPage";
 import AdminDoctorChat from "./components/admin/AdminDoctorChat";
 import AdminSupportTickets from "./components/support/AdminSupportTickets";
 import AdminSupportTicketDetail from "./components/support/AdminSupportTicketDetail";
+import FooterOptionsPage from "./components/admin/FooterOptionsPage";
+import ContactQueriesPage from "./components/admin/ContactQueriesPage";
 import SettingsChangePassword from "./components/settings/SettingsChangePassword";
 import RequireAdmin from "./components/auth/RequireAdmin";
 import Logout from "./components/auth/Logout";
@@ -86,6 +88,14 @@ const Approuter = () => {
             element={
               <RequireAdmin>
                 <AdminSupportTicketDetail />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/contact-queries"
+            element={
+              <RequireAdmin>
+                <ContactQueriesPage />
               </RequireAdmin>
             }
           />
@@ -262,6 +272,14 @@ const Approuter = () => {
             element={
               <RequireAdmin>
                 <SettingsChangePassword />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/footer-options"
+            element={
+              <RequireAdmin>
+                <FooterOptionsPage />
               </RequireAdmin>
             }
           />

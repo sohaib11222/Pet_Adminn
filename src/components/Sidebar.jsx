@@ -22,6 +22,7 @@ const Sidebar = (props) => {
       ["/vaccines", "vaccines"],
       ["/appointments", "appointments"],
       ["/support-tickets", "supportTickets"],
+      ["/contact-queries", "contactQueries"],
       ["/pet-stores", "petStores"],
       ["/products", "products"],
       ["/orders", "orders"],
@@ -202,6 +203,15 @@ const Sidebar = (props) => {
                     {renderIndicator("supportTickets")}
                   </Link>
                 </li>
+                <li>
+                  <Link className={isActive('/contact-queries') ? 'active' : ''} to="/contact-queries">
+                    <span className="menu-side">
+                      <i className="fa-solid fa-envelope" />
+                    </span>{" "}
+                    <span>Contact Us Queries</span>
+                    {renderIndicator("contactQueries")}
+                  </Link>
+                </li>
 
                 <li className="menu-title">Commerce</li>
                 <li>
@@ -308,6 +318,14 @@ const Sidebar = (props) => {
                     </span>{" "}
                     <span>Specializations</span>
                     {renderIndicator("specializations")}
+                  </Link>
+                </li>
+                <li>
+                  <Link className={isActive('/footer-options') ? 'active' : ''} to="/footer-options">
+                    <span className="menu-side">
+                      <i className="fa-solid fa-list-check" />
+                    </span>{" "}
+                    <span>Footer Options</span>
                   </Link>
                 </li>
                 {/* <li>
