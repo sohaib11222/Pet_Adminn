@@ -67,7 +67,7 @@ const Patient_Dashboard = () => {
                       </i>
                     </li>
                     <li className="breadcrumb-item active">
-                      Patient Dashboard
+                      My Pet Dashboard
                     </li>
                   </ul>
                 </div>

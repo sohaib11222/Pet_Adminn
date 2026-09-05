@@ -94,14 +94,14 @@ const EditPatients = () => {
                 <div className="col-sm-12">
                   <ul className="breadcrumb">
                     <li className="breadcrumb-item">
-                      <Link to="# ">Patients </Link>
+                      <Link to="# ">My Pets </Link>
                     </li>
                     <li className="breadcrumb-item">
                       <i className="feather-chevron-right">
                         <FeatherIcon icon="chevron-right" />
                       </i>
                     </li>
-                    <li className="breadcrumb-item active">Edit Patient</li>
+                    <li className="breadcrumb-item active">Edit My Pet</li>
                   </ul>
                 </div>
               </div>

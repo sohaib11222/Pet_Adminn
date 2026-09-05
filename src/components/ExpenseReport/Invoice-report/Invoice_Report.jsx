@@ -15,7 +15,7 @@ import { DatePicker} from "antd";
 const Invoice_Report = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [patient, setPatient] = useState([
-    { value: 1, label: "Select Patient" },
+    { value: 1, label: "Select My Pet" },
     { value: 2, label: "Bernardo James" },
     { value: 3, label: "Galaviz Lalema" },
     { value: 4, label: "Tarah Williams" },
@@ -203,7 +203,7 @@ const Invoice_Report = () => {
                         <div className="row">
                           <div className="col-12 col-md-6 col-xl-3">
                             <div className="form-group local-forms">
-                              <label>Patient </label>
+                              <label>My Pet </label>
                               <Select
                                 defaultValue={selectedOption}
                                 onChange={setSelectedOption}

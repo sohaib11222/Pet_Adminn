@@ -54,12 +54,12 @@ const Patient_Settings = () => {
                             <div className="row">
                                 <div className="col-sm-12">
                                     <ul className="breadcrumb">
-                                        <li className="breadcrumb-item"><Link to="patients.html">Patients </Link></li>
+                                        <li className="breadcrumb-item"><Link to="patients.html">My Pets </Link></li>
                                         <li className="breadcrumb-item"><i className="feather-chevron-right">
                                             <FeatherIcon icon="chevron-right"/>
                                             </i>
                                         </li>
-                                        <li className="breadcrumb-item active">Patient Profile</li>
+                                        <li className="breadcrumb-item active">My Pet Profile</li>
                                     </ul>
                                 </div>
                             </div>
@@ -72,7 +72,7 @@ const Patient_Settings = () => {
                                         <div className="row">
                                             <div className="col-md-12">
                                                 <div className="about-info">
-                                                    <h4>Patient Profile  <span><Link to="#"><i className="feather-more-vertical" /></Link></span></h4>
+                                                    <h4>My Pet Profile  <span><Link to="#"><i className="feather-more-vertical" /></Link></span></h4>
                                                 </div>
                                                 <div className="doctor-profile-head">
                                                     <div className="profile-bg-img">

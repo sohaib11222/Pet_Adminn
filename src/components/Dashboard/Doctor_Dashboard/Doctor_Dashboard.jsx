@@ -229,7 +229,7 @@ const Doctor_Dashboard = () => {
                 <div className="struct-point">
                   <div className="card patient-structure">
                     <div className="card-body">
-                      <h5>New Patients</h5>
+                      <h5>New Pets</h5>
                       <h3>
                         56
                         <span className="status-green">
@@ -241,7 +241,7 @@ const Doctor_Dashboard = () => {
                   </div>
                   <div className="card patient-structure">
                     <div className="card-body">
-                      <h5>Old Patients</h5>
+                      <h5>Existing Pets</h5>
                       <h3>
                         35
                         <span className="status-pink">
@@ -493,7 +493,7 @@ const Doctor_Dashboard = () => {
                                 </Link>
                                 <ul className="doctor-sub-list dropdown-menu">
                                   <li className="patient-new-list dropdown-item">
-                                    Patient<span>Marie kennedy</span>
+                                    My Pet<span>Marie kennedy</span>
                                     <Link
                                       to="#"
                                       className="new-dot status-green"

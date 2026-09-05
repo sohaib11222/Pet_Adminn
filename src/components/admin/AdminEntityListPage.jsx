@@ -4561,6 +4561,18 @@ const AdminEntityListPage = ({ entity }) => {
             <div className="mb-2"><strong>Payment:</strong> {upper(orderDetails?.paymentStatus) || "-"}</div>
             <div className="mb-2"><strong>Total:</strong> {orderDetails?.total}</div>
             <div className="mb-2"><strong>Created:</strong> {formatDate(orderDetails?.createdAt)}</div>
+            <div className="border rounded p-3 mb-3 bg-light">
+              <div className="fw-bold mb-2">Delivery Commitment &amp; Monitoring</div>
+              <div className="mb-1"><strong>Order requested:</strong> {formatDate(orderDetails?.requestedAt || orderDetails?.createdAt) || "-"}</div>
+              <div className="mb-1"><strong>Pharmacy processed:</strong> {formatDate(orderDetails?.pharmacyAcceptedAt) || "-"}</div>
+              <div className="mb-1"><strong>Shipping fee added:</strong> {formatDate(orderDetails?.shippingFeeAddedAt || orderDetails?.shippingUpdatedAt) || "-"}</div>
+              <div className="mb-1"><strong>Customer paid:</strong> {formatDate(orderDetails?.customerPaidAt) || "-"}</div>
+              <div className="mb-1"><strong>Promised delivery:</strong> {orderDetails?.promisedDeliveryDays ? `${orderDetails.promisedDeliveryDays} Days` : "Not set"}</div>
+              <div className="mb-1"><strong>Expected delivery date:</strong> {formatDate(orderDetails?.expectedDeliveryDate) || "-"}</div>
+              <div className="mb-1"><strong>Actual delivered:</strong> {formatDate(orderDetails?.actualDeliveredAt || orderDetails?.deliveredAt) || "-"}</div>
+              <div className="mb-1"><strong>Total actual delivery days:</strong> {orderDetails?.totalActualDeliveryDays ?? "-"}</div>
+              <div className="mb-0"><strong>Delivery status:</strong> {upper(orderDetails?.deliveryStatus || "AWAITING_DELIVERY").replace(/_/g, " ")}{orderDetails?.daysLate ? ` (${orderDetails.daysLate} day${Number(orderDetails.daysLate) === 1 ? "" : "s"} late)` : ""}</div>
+            </div>
             <div className="mb-2"><strong>Items:</strong></div>
             <div className="table-responsive">
               <table className="table table-sm">

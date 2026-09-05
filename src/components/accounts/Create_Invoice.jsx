@@ -73,7 +73,7 @@ const Create_Invoice = () => {
                           </div>
                           <div className="col-12 col-md-6 col-xl-6">
                             <div className="form-group local-forms">
-                              <label>Patient Name <span className="login-danger">*</span></label>
+                              <label>My Pet Name <span className="login-danger">*</span></label>
                               <input className="form-control" type="text" />
                             </div>
                           </div>
@@ -178,7 +178,7 @@ const Create_Invoice = () => {
                           </div>
                           <div className="col-12 col-md-6 col-xl-6">
                             <div className="form-group local-forms">
-                              <label>Patient Address  <span className="login-danger">*</span></label>
+                              <label>My Pet Address  <span className="login-danger">*</span></label>
                               <textarea className="form-control" rows={3} cols={30} defaultValue={""} />
                             </div>
                           </div>

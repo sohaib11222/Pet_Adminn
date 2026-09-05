@@ -63,7 +63,7 @@ const PatientsProfile = () => {
                   <div className="col-sm-12">
                     <ul className="breadcrumb">
                       <li className="breadcrumb-item">
-                        <Link to="#">Patients </Link>
+                        <Link to="#">My Pets </Link>
                       </li>
                       <li className="breadcrumb-item">
                         <i className="feather-chevron-right">
@@ -71,7 +71,7 @@ const PatientsProfile = () => {
                         </i>
                       </li>
                       <li className="breadcrumb-item active">
-                        Patient Profile
+                        My Pet Profile
                       </li>
                     </ul>
                   </div>
@@ -86,7 +86,7 @@ const PatientsProfile = () => {
                         <div className="col-md-12">
                           <div className="about-info">
                             <h4>
-                              Patients Profile{" "}
+                              My Pets Profile{" "}
                               <span>
                                 <Link to="#">
                                   <i className="feather-more-vertical">

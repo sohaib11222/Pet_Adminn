@@ -177,7 +177,7 @@ const Staff_Settings = () => {
                                                         </div>
                                                         <div className="skill-statistics">
                                                             <div className="skills-head">
-                                                                <h5>Patient Care</h5>
+                                                                <h5>My Pet Care</h5>
                                                                 <p>85%</p>
                                                             </div>
                                                             <div className="progress mb-0">
@@ -195,7 +195,7 @@ const Staff_Settings = () => {
                                                         </div>
                                                         <div className="skill-statistics">
                                                             <div className="skills-head">
-                                                                <h5>Patient Visit </h5>
+                                                                <h5>My Pet Visit </h5>
                                                                 <p>90%</p>
                                                             </div>
                                                             <div className="progress mb-0">

@@ -218,12 +218,12 @@ const PatientsList = () => {
           <div className="col-sm-12">
             <ul className="breadcrumb">
               <li className="breadcrumb-item">
-                <Link to="#">Patients </Link>
+                <Link to="#">My Pets </Link>
               </li>
               <li className="breadcrumb-item">
                 <i className="feather-chevron-right" />
               </li>
-              <li className="breadcrumb-item active">Patients List</li>
+              <li className="breadcrumb-item active">My Pets List</li>
             </ul>
           </div>
         </div>
@@ -238,7 +238,7 @@ const PatientsList = () => {
                 <div className="row align-items-center">
                   <div className="col">
                     <div className="doctor-table-blk">
-                      <h3>Patients List</h3>
+                      <h3>My Pets List</h3>
                       <div className="doctor-search-blk">
                         <div className="top-nav-search table-search-blk">
                           <form>

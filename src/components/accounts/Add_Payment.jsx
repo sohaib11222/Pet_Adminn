@@ -94,7 +94,7 @@ const Add_Payment = () => {
                           <div className="col-12 col-md-6 col-xl-6">
                             <div className="form-group local-forms">
                               <label>
-                                Patient Name
+                                My Pet Name
                                 <span className="login-danger">*</span>
                               </label>
                               <input className="form-control" type="text" />

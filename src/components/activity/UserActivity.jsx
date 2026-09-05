@@ -63,7 +63,7 @@ const UserActivity = () => {
                                   Dr.Henry Markhay{" "}
                                   <span>
                                     {" "}
-                                    Completed the Patient visit at Glory
+                                    Completed the My Pet visit at Glory
                                     Hospital in Florida, USA .
                                   </span>
                                 </h3>

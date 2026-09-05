@@ -22,6 +22,7 @@ const Admin_Dashboard = () => {
   const [recentAppointments, setRecentAppointments] = useState([]);
   const [recentPets, setRecentPets] = useState([]);
   const [recentVets, setRecentVets] = useState([]);
+  const [deliveryPerformance, setDeliveryPerformance] = useState(null);
 
   const currentUser = useMemo(() => getCurrentUser(), []);
 
@@ -31,19 +32,21 @@ const Admin_Dashboard = () => {
       setLoading(true);
     }
     try {
-      const [dashRes, apptRes, petRes, vetsRes] = await Promise.all([
+      const [dashRes, apptRes, petRes, vetsRes, deliveryRes] = await Promise.all([
         apiRequest("/admin/dashboard"),
         apiRequest("/admin/appointments", { params: { page: 1, limit: 5 } }),
         apiRequest("/admin/pets", { params: { page: 1, limit: 5 } }),
         apiRequest("/users/veterinarians", {
           params: { page: 1, limit: 5, status: "APPROVED" },
         }),
+        apiRequest("/orders/delivery-performance"),
       ]);
 
       setStats(dashRes?.data || null);
       setRecentAppointments(apptRes?.data?.appointments || []);
       setRecentPets(petRes?.data?.pets || []);
       setRecentVets(vetsRes?.data?.veterinarians || []);
+      setDeliveryPerformance(deliveryRes?.data || deliveryRes || null);
     } catch (e) {
       if (!silent) {
         setError(e?.message || "Failed to load dashboard");
@@ -76,6 +79,9 @@ const Admin_Dashboard = () => {
   const statsPetOwners = Number(stats?.totalPetOwners || 0);
   const statsTotalVets = Number(stats?.totalVeterinarians || 0);
   const statsEarnings = Number(stats?.totalEarnings || 0);
+  const pharmacyDeliveryRows = Array.isArray(deliveryPerformance?.pharmacies)
+    ? deliveryPerformance.pharmacies
+    : [];
 
   return (
     <>
@@ -193,6 +199,56 @@ const Admin_Dashboard = () => {
                   <div className="morning-img">
                     <img src={morning_img_01}
                      alt="#" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-12 col-md-12 col-xl-12">
+                <div className="card">
+                  <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                      <h4 className="card-title mb-0">Pharmacy Delivery Performance</h4>
+                      <small className="text-muted">Late orders update automatically after their promised delivery date.</small>
+                    </div>
+                    <Link to="/orders" className="patient-views">View Orders</Link>
+                  </div>
+                  <div className="card-body p-0 table-dash">
+                    <div className="table-responsive admin-dashboard-table-wrap">
+                      <table className="table mb-0 border-0 datatable custom-table">
+                        <thead>
+                          <tr>
+                            <th>Pharmacy</th>
+                            <th>Type</th>
+                            <th>Total Orders</th>
+                            <th>On Time</th>
+                            <th>Late</th>
+                            <th>Awaiting Delivery</th>
+                            <th>Average Delivery Time</th>
+                            <th>On-Time Delivery</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pharmacyDeliveryRows.map((pharmacy) => (
+                            <tr key={pharmacy.petStoreId || pharmacy.pharmacyName}>
+                              <td>{pharmacy.pharmacyName}</td>
+                              <td>{pharmacy.storeType}</td>
+                              <td>{pharmacy.totalOrders}</td>
+                              <td><span className="text-success fw-semibold">{pharmacy.onTimeOrders}</span></td>
+                              <td><span className={pharmacy.lateOrders ? "text-danger fw-semibold" : "text-muted"}>{pharmacy.lateOrders}</span></td>
+                              <td>{pharmacy.awaitingDeliveryOrders}</td>
+                              <td>{pharmacy.averageDeliveryTime === null ? "—" : `${pharmacy.averageDeliveryTime} Days`}</td>
+                              <td>{pharmacy.onTimeDeliveryPercentage === null ? "—" : `${pharmacy.onTimeDeliveryPercentage}%`}</td>
+                            </tr>
+                          ))}
+                          {!loading && pharmacyDeliveryRows.length === 0 ? (
+                            <tr>
+                              <td colSpan={8} className="text-center py-4">No pharmacy delivery data yet.</td>
+                            </tr>
+                          ) : null}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -324,7 +380,7 @@ const Admin_Dashboard = () => {
                               </div>
                             </th>
                             <th>No</th>
-                            <th>Patient name</th>
+                            <th>My Pet name</th>
                             <th>Doctor</th>
                             <th>Time</th>
                             <th>Disease</th>
@@ -408,7 +464,7 @@ const Admin_Dashboard = () => {
                 <div className="card">
                   <div className="card-header pb-0">
                     <h4 className="card-title d-inline-block">
-                      Recent Patients{" "}
+                      Recent Pets{" "}
                     </h4>{" "}
                     <Link
                       to="/pets"
@@ -432,7 +488,7 @@ const Admin_Dashboard = () => {
                               </div>
                             </th>
                             <th>No</th>
-                            <th>Patient name</th>
+                            <th>My Pet name</th>
                             <th>Age</th>
                             <th>Date of Birth</th>
                             <th>Diagnosis</th>

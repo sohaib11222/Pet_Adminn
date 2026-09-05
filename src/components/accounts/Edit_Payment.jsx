@@ -81,7 +81,7 @@ const Edit_Payment = () => {
                                                 </div>
                                                 <div className="col-12 col-md-6 col-xl-6">
                                                     <div className="form-group local-forms">
-                                                        <label>Patient Name <span className="login-danger">*</span></label>
+                                                        <label>My Pet Name <span className="login-danger">*</span></label>
                                                         <input className="form-control" type="text" defaultValue="Bernardo James" />
                                                     </div>
                                                 </div>
