@@ -26,6 +26,18 @@ const formatDate = (value) => {
 
 const upper = (v) => (v ? String(v).toUpperCase() : "");
 
+const roleLabel = (value) => {
+  const labels = {
+    ADMIN: "Admin",
+    PET_OWNER: "Pet Owner",
+    VETERINARIAN: "Veterinarian",
+    PET_STORE: "Pharmacy",
+    PARAPHARMACY: "Parapharmacy",
+    PET_SITTER: "Pet Sitter",
+  };
+  return labels[upper(value)] || String(value || "-").replace(/_/g, " ");
+};
+
 const getSpecializationNames = (profile) => {
   const details = Array.isArray(profile?.specializationDetails)
     ? profile.specializationDetails
@@ -1953,6 +1965,7 @@ const AdminEntityListPage = ({ entity }) => {
           title: "Role",
           dataIndex: "role",
           sorter: (a, b) => (a?.role || "").length - (b?.role || "").length,
+          render: (value) => <span title={upper(value)}>{roleLabel(value)}</span>,
         },
         {
           title: "Status",
@@ -3382,6 +3395,7 @@ const AdminEntityListPage = ({ entity }) => {
                                       <option value="VETERINARIAN">VETERINARIAN</option>
                                       <option value="PET_STORE">PET_STORE</option>
                                       <option value="PARAPHARMACY">PARAPHARMACY</option>
+                                      <option value="PET_SITTER">PET_SITTER</option>
                                     </>
                                   ) : (
                                     <>
