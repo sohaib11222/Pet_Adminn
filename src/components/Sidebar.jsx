@@ -33,6 +33,7 @@ const Sidebar = (props) => {
       ["/reviews", "reviews"],
       ["/insurance-companies", "insuranceCompanies"],
       ["/specializations", "specializations"],
+      ["/platform-services", "platformServices"],
       ["/pets", "pets"],
     ];
     return matches.find(([prefix]) => path === prefix || path.startsWith(`${prefix}/`))?.[1];
@@ -138,6 +139,12 @@ const Sidebar = (props) => {
                 </li>
 
                 <li className="menu-title">Pets & Care</li>
+                <li>
+                  <Link className={isActive('/platform-services') ? 'active' : ''} to="/platform-services">
+                    <span className="menu-side"><i className="fa-solid fa-handshake" /></span>
+                    <span>Platform Services</span>
+                  </Link>
+                </li>
                 <li>
                   <Link className={isActive('/pets') ? 'active' : ''} to="/pets">
                     <span className="menu-side">

@@ -21,6 +21,7 @@ import AdminSupportTicketDetail from "./components/support/AdminSupportTicketDet
 import FooterOptionsPage from "./components/admin/FooterOptionsPage";
 import ContactQueriesPage from "./components/admin/ContactQueriesPage";
 import SettingsChangePassword from "./components/settings/SettingsChangePassword";
+import PlatformServicesPage from "./components/admin/PlatformServicesPage";
 import RequireAdmin from "./components/auth/RequireAdmin";
 import Logout from "./components/auth/Logout";
 import AdminGoogleTranslate from "./components/admin/AdminGoogleTranslate";
@@ -274,6 +275,10 @@ const Approuter = () => {
                 <SettingsChangePassword />
               </RequireAdmin>
             }
+          />
+          <Route
+            path="/platform-services"
+            element={<RequireAdmin><PlatformServicesPage /></RequireAdmin>}
           />
           <Route
             path="/footer-options"
