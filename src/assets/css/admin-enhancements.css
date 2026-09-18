@@ -63,6 +63,23 @@
   position: relative;
 }
 
+.sidebar,
+.sidebar .sidebar-inner,
+.sidebar #sidebar-menu,
+.sidebar #sidebar-menu > ul {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.sidebar-menu > ul > li > a > span:not(.menu-side):not(.admin-sidebar-dot) {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .admin-table-actions {
   display: grid;
   width: 100%;
