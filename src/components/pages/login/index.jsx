@@ -8,12 +8,15 @@ import { useState } from "react";
 
 import { Eye, EyeOff } from "feather-icons-react/build/IconComponents";
 import { apiRequest, setAuthSession } from "../../../api/client";
+import LanguageToggle from "../../common/LanguageToggle";
+import { useLanguage } from "../../../contexts/LanguageContext";
 
 // import ReactPasswordToggleIcon from 'react-password-toggle-icon';
 
 
 
 const Login = () => {
+  const { t } = useLanguage();
   const loginLogo = `${process.env.PUBLIC_URL}/pet-logo.jpg`;
 
 
@@ -35,7 +38,7 @@ const Login = () => {
     const trimmedEmail = String(email || '').trim();
     const trimmedPassword = String(password || '').trim();
     if (!trimmedEmail || !trimmedPassword) {
-      setError('Email and password are required');
+      setError(t('login.required'));
       return;
     }
 
@@ -52,16 +55,16 @@ const Login = () => {
       const refreshToken = payload?.refreshToken;
 
       if (!user || !token) {
-        throw new Error('Invalid login response');
+        throw new Error(t('login.invalidResponse'));
       }
       if (user.role !== 'ADMIN') {
-        throw new Error('Only admin accounts can access this panel');
+        throw new Error(t('login.adminOnly'));
       }
 
       setAuthSession({ user, token, refreshToken });
       navigate('/dashboard');
     } catch (err) {
-      setError(err?.message || 'Login failed');
+      setError(err?.message || t('login.failed'));
     } finally {
       setLoading(false);
     }
@@ -99,6 +102,9 @@ const Login = () => {
             <div className="col-lg-6 login-wrap-bg">
               <div className="login-wrapper">
                 <div className="loginbox">
+                  <div className="admin-login-language">
+                    <LanguageToggle />
+                  </div>
                   <div className="login-right">
                     <div className="login-right-wrap">
                       <div className="account-logo">
@@ -106,12 +112,12 @@ const Login = () => {
                           <img src={loginLogo} className="login-page-logo" alt="#" />
                         </Link>
                       </div>
-                      <h2>Login</h2>
+                      <h2>{t('login.title')}</h2>
                       {/* Form */}
                       <form onSubmit={onSubmit}>
                         <div className="form-group">
                           <label>
-                            Email <span className="login-danger">*</span>
+                            {t('login.email')} <span className="login-danger">*</span>
                           </label>
                           <input
                             className="form-control"
@@ -122,7 +128,7 @@ const Login = () => {
                         </div>
                         <div className="form-group">
                           <label>
-                            Password <span className="login-danger">*</span>
+                            {t('login.password')} <span className="login-danger">*</span>
                           </label>
                           <input
                           type={passwordVisible ? 'password' : ''}
@@ -159,7 +165,7 @@ const Login = () => {
                             type="submit"
                             disabled={loading}
                           >
-                            {loading ? 'Logging in...' : 'Login'}
+                            {loading ? t('login.loggingIn') : t('login.submit')}
                           </button>
                         </div>
                       </form>

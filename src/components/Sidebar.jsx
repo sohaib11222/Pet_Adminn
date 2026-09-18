@@ -5,11 +5,13 @@ import { Link, useLocation } from "react-router-dom";
 import { dashboard, logout, menuicon04, menuicon06, menuicon08, menuicon09, menuicon11, menuicon12, menuicon14, menuicon15, patients, sidemenu } from './imagepath';
 import Scrollbars from "react-custom-scrollbars-2";
 import { useAdminNotifications } from "./admin/AdminNotificationsContext";
+import { useLanguage } from "../contexts/LanguageContext";
 
 
 const Sidebar = (props) => {
   const location = useLocation();
   const { indicators, markSectionSeen } = useAdminNotifications();
+  const { t } = useLanguage();
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   const sectionForPath = (path) => {
@@ -49,8 +51,8 @@ const Sidebar = (props) => {
     if (!indicator?.tone) return null;
     const label =
       indicator.tone === "red"
-        ? `${indicator.pendingCount} item${indicator.pendingCount === 1 ? "" : "s"} need review`
-        : "New data available";
+        ? `${indicator.pendingCount} ${indicator.pendingCount === 1 ? t("sidebar.item") : t("sidebar.items")} ${t("sidebar.needReview")}`
+        : t("sidebar.newData");
     return (
       <span
         className={`admin-sidebar-dot admin-sidebar-dot--${indicator.tone}`}
@@ -87,24 +89,24 @@ const Sidebar = (props) => {
               onMouseOver={expandMenuOpen}
             >
               <ul>
-                <li className="menu-title">Main</li>
+                <li className="menu-title">{t("nav.main")}</li>
 
                 <li>
                   <Link className={isActive('/dashboard') ? 'active' : ''} to="/dashboard">
                     <span className="menu-side">
                       <img src={dashboard} alt="" />
                     </span>{" "}
-                    <span>Dashboard</span>
+                    <span>{t("nav.dashboard")}</span>
                   </Link>
                 </li>
 
-                <li className="menu-title">Approvals</li>
+                <li className="menu-title">{t("nav.approvals")}</li>
                 <li>
                   <Link className={isActive('/approvals/veterinarians') ? 'active' : ''} to="/approvals/veterinarians">
                     <span className="menu-side">
                       <img src={menuicon08} alt="" />
                     </span>{" "}
-                    <span>Veterinarians</span>
+                    <span>{t("nav.veterinarians")}</span>
                     {renderIndicator("veterinarianApprovals")}
                   </Link>
                 </li>
@@ -113,18 +115,18 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <img src={menuicon08} alt="" />
                     </span>{" "}
-                    <span>Pet Stores</span>
+                    <span>{t("nav.petStores")}</span>
                     {renderIndicator("petStoreApprovals")}
                   </Link>
                 </li>
 
-                <li className="menu-title">Users</li>
+                <li className="menu-title">{t("nav.users")}</li>
                 <li>
                   <Link className={isActive('/users') ? 'active' : ''} to="/users">
                     <span className="menu-side">
                       <img src={patients} alt="" />
                     </span>{" "}
-                    <span>All Users</span>
+                    <span>{t("nav.users")}</span>
                     {renderIndicator("users")}
                   </Link>
                 </li>
@@ -133,16 +135,16 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <img src={patients} alt="" />
                     </span>{" "}
-                    <span>Veterinarians</span>
+                    <span>{t("nav.veterinarians")}</span>
                     {renderIndicator("veterinarians")}
                   </Link>
                 </li>
 
-                <li className="menu-title">Pets & Care</li>
+                <li className="menu-title">{t("nav.petsCare")}</li>
                 <li>
                   <Link className={isActive('/platform-services') ? 'active' : ''} to="/platform-services">
                     <span className="menu-side"><i className="fa-solid fa-handshake" /></span>
-                    <span>Platform Services</span>
+                    <span>{t("nav.platformServices")}</span>
                   </Link>
                 </li>
                 <li>
@@ -150,7 +152,7 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <img src={menuicon14} alt="" />
                     </span>{" "}
-                    <span>Pets</span>
+                    <span>{t("nav.pets")}</span>
                     {renderIndicator("pets")}
                   </Link>
                 </li>
@@ -159,7 +161,7 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <img src={menuicon14} alt="" />
                     </span>{" "}
-                    <span>Medical Records</span>
+                    <span>{t("nav.medicalRecords")}</span>
                     {renderIndicator("medicalRecords")}
                   </Link>
                 </li>
@@ -168,29 +170,29 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <img src={menuicon06} alt="" />
                     </span>{" "}
-                    <span>Vaccines</span>
+                    <span>{t("nav.vaccines")}</span>
                     {renderIndicator("vaccines")}
                   </Link>
                 </li>
 
-                <li className="menu-title">Appointments</li>
+                <li className="menu-title">{t("nav.appointments")}</li>
                 <li>
                   <Link className={isActive('/appointments') ? 'active' : ''} to="/appointments">
                     <span className="menu-side">
                       <img src={menuicon04} alt="" />
                     </span>{" "}
-                    <span>Appointments</span>
+                    <span>{t("nav.appointments")}</span>
                     {renderIndicator("appointments")}
                   </Link>
                 </li>
 
-                <li className="menu-title">Communication</li>
+                <li className="menu-title">{t("nav.communication")}</li>
                 <li>
                   <Link className={isActive('/admin-messages') ? 'active' : ''} to="/admin-messages">
                     <span className="menu-side">
                       <i className="fa-solid fa-message" />
                     </span>{" "}
-                    <span>Doctor Messages</span>
+                    <span>{t("nav.doctorMessages")}</span>
                   </Link>
                 </li>
                 <li>
@@ -198,7 +200,7 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <i className="fa-solid fa-store" />
                     </span>{" "}
-                    <span>Pharmacy / Parapharmacy Messages</span>
+                    <span>{t("nav.pharmacyMessages")}</span>
                   </Link>
                 </li>
                 <li>
@@ -206,7 +208,7 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <i className="fa-solid fa-headset" />
                     </span>{" "}
-                    <span>Support Tickets</span>
+                    <span>{t("nav.supportTickets")}</span>
                     {renderIndicator("supportTickets")}
                   </Link>
                 </li>
@@ -215,18 +217,18 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <i className="fa-solid fa-envelope" />
                     </span>{" "}
-                    <span>Contact Us Queries</span>
+                    <span>{t("nav.contactQueries")}</span>
                     {renderIndicator("contactQueries")}
                   </Link>
                 </li>
 
-                <li className="menu-title">Commerce</li>
+                <li className="menu-title">{t("nav.commerce")}</li>
                 <li>
                   <Link className={isActive('/pet-stores') ? 'active' : ''} to="/pet-stores">
                     <span className="menu-side">
                       <img src={sidemenu} alt="" />
                     </span>{" "}
-                    <span>Pet Stores</span>
+                    <span>{t("nav.petStores")}</span>
                     {renderIndicator("petStores")}
                   </Link>
                 </li>
@@ -235,7 +237,7 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <img src={sidemenu} alt="" />
                     </span>{" "}
-                    <span>Products</span>
+                    <span>{t("nav.products")}</span>
                     {renderIndicator("products")}
                   </Link>
                 </li>
@@ -244,18 +246,18 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <img src={sidemenu} alt="" />
                     </span>{" "}
-                    <span>Orders</span>
+                    <span>{t("nav.orders")}</span>
                     {renderIndicator("orders")}
                   </Link>
                 </li>
 
-                <li className="menu-title">Finance</li>
+                <li className="menu-title">{t("nav.finance")}</li>
                 <li>
                   <Link className={isActive('/transactions') ? 'active' : ''} to="/transactions">
                     <span className="menu-side">
                       <img src={menuicon09} alt="" />
                     </span>{" "}
-                    <span>Transactions</span>
+                    <span>{t("nav.transactions")}</span>
                     {renderIndicator("transactions")}
                   </Link>
                 </li>
@@ -272,29 +274,29 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <img src={menuicon09} alt="" />
                     </span>{" "}
-                    <span>Withdrawal Requests</span>
+                    <span>{t("nav.withdrawalRequests")}</span>
                     {renderIndicator("withdrawals")}
                   </Link>
                 </li>
 
-                <li className="menu-title">Subscriptions</li>
+                <li className="menu-title">{t("nav.subscriptions")}</li>
                 <li>
                   <Link className={isActive('/subscription-plans') ? 'active' : ''} to="/subscription-plans">
                     <span className="menu-side">
                       <img src={menuicon15} alt="" />
                     </span>{" "}
-                    <span>Subscription Plans</span>
+                    <span>{t("nav.subscriptionPlans")}</span>
                     {renderIndicator("subscriptionPlans")}
                   </Link>
                 </li>
 
-                <li className="menu-title">Content</li>
+                <li className="menu-title">{t("nav.content")}</li>
                 <li>
                   <Link className={isActive('/announcements') ? 'active' : ''} to="/announcements">
                     <span className="menu-side">
                       <img src={menuicon12} alt="" />
                     </span>{" "}
-                    <span>Announcements</span>
+                    <span>{t("nav.announcements")}</span>
                     {renderIndicator("announcements")}
                   </Link>
                 </li>
@@ -303,18 +305,18 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <img src={menuicon11} alt="" />
                     </span>{" "}
-                    <span>Reviews</span>
+                    <span>{t("nav.reviews")}</span>
                     {renderIndicator("reviews")}
                   </Link>
                 </li>
 
-                <li className="menu-title">Configuration</li>
+                <li className="menu-title">{t("nav.configuration")}</li>
                 <li>
                   <Link className={isActive('/insurance-companies') ? 'active' : ''} to="/insurance-companies">
                     <span className="menu-side">
                       <img src={menuicon06} alt="" />
                     </span>{" "}
-                    <span>Insurance Companies</span>
+                    <span>{t("nav.insuranceCompanies")}</span>
                     {renderIndicator("insuranceCompanies")}
                   </Link>
                 </li>
@@ -323,7 +325,7 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <img src={menuicon06} alt="" />
                     </span>{" "}
-                    <span>Specializations</span>
+                    <span>{t("nav.specializations")}</span>
                     {renderIndicator("specializations")}
                   </Link>
                 </li>
@@ -332,7 +334,7 @@ const Sidebar = (props) => {
                     <span className="menu-side">
                       <i className="fa-solid fa-list-check" />
                     </span>{" "}
-                    <span>Footer Options</span>
+                    <span>{t("nav.footerOptions")}</span>
                   </Link>
                 </li>
                 {/* <li>
@@ -342,7 +344,7 @@ const Sidebar = (props) => {
                 </li> */}
                 <li>
                   <Link className={isActive('/change-password') ? 'active' : ''} to="/change-password">
-                    <i className="fa fa-key" /> <span>Change Password</span>
+                    <i className="fa fa-key" /> <span>{t("nav.changePassword")}</span>
                   </Link>
                 </li>
               </ul>
@@ -351,7 +353,7 @@ const Sidebar = (props) => {
                   <span className="menu-side">
                     <img src={logout} alt="" />
                   </span>{" "}
-                  <span>Logout</span>
+                  <span>{t("nav.logout")}</span>
                 </Link>
               </div>
             </div>

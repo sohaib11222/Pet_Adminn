@@ -1,40 +1,48 @@
-/* Google Translate, live sidebar indicators, detail views, and compact tables. */
-.admin-google-translate {
-  position: fixed;
-  top: 17px;
-  right: 28px;
-  z-index: 1105;
-  min-width: 104px;
-  min-height: 30px;
-  padding: 4px 7px;
-  border: 1px solid #e2e8f0;
+/* Manual Italian/English language controls, live sidebar indicators, detail views, and compact tables. */
+.admin-language-toggle {
+  display: inline-flex;
+  min-width: 58px;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid #dbe4ec;
   border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
-}
-
-.admin-google-translate .goog-te-gadget {
-  color: #475569;
-  font-family: Poppins, sans-serif;
-  font-size: 11px;
-  line-height: 1.35;
-}
-
-.admin-google-translate .goog-te-gadget-simple {
-  border: 0;
-  background: transparent;
-  padding: 1px;
-}
-
-.admin-google-translate .goog-te-gadget-simple .goog-te-menu-value,
-.admin-google-translate .goog-te-gadget-simple .goog-te-menu-value span {
+  background: #fff;
   color: #334155;
-  font-size: 11px;
+  font: 600 12px/1.2 Poppins, sans-serif;
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease, color .2s ease;
 }
 
-.admin-google-translate__loading {
-  color: #475569;
-  font: 600 11px/22px Poppins, sans-serif;
+.admin-language-toggle:hover,
+.admin-language-toggle:focus-visible {
+  border-color: #0d8b7e;
+  background: #eefaf7;
+  color: #087b73;
+  outline: none;
+}
+
+.admin-language-toggle i {
+  font-size: 15px;
+}
+
+.admin-header-language {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+}
+
+.admin-login-language {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 2;
 }
 
 .admin-sidebar-dot {
@@ -58,6 +66,7 @@
 .admin-table-actions {
   display: grid;
   width: 100%;
+  min-width: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
   gap: 8px;
@@ -202,7 +211,20 @@
   white-space: nowrap;
 }
 
+.admin-chat-page {
+  display: flex;
+  height: calc(100vh - 100px);
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.admin-table-responsive .ant-table-cell:has(.admin-table-actions) {
+  overflow: visible;
+}
+
 .admin-chat-page .page-header {
+  flex: 0 0 auto;
   display: flex;
   align-items: end;
   justify-content: space-between;
@@ -227,8 +249,10 @@
 
 .admin-chat-layout {
   display: grid;
+  flex: 1 1 auto;
   grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
-  min-height: min(680px, calc(100vh - 205px));
+  height: auto;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
@@ -237,6 +261,7 @@
 }
 
 .admin-chat-conversation-list {
+  min-height: 0;
   overflow-y: auto;
   border-right: 1px solid #e2e8f0;
   background: #fbfdfd;
@@ -321,8 +346,10 @@
 
 .admin-chat-thread {
   display: flex;
+  min-height: 0;
   min-width: 0;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .admin-chat-thread-header {
@@ -355,6 +382,7 @@
   flex-direction: column;
   gap: 12px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 22px;
   background: #f8fafc;
 }
@@ -431,6 +459,7 @@
 
 .admin-chat-compose {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 9px;
   padding: 13px 16px;
@@ -475,13 +504,6 @@
 }
 
 @media (max-width: 991px) {
-  .admin-google-translate {
-    top: 13px;
-    right: 18px;
-    transform: scale(0.92);
-    transform-origin: top right;
-  }
-
   .admin-detail-grid {
     grid-template-columns: 1fr;
   }
@@ -503,10 +525,6 @@
 }
 
 @media (max-width: 575px) {
-  .admin-google-translate {
-    right: 10px;
-  }
-
   .admin-table-actions {
     grid-template-columns: 1fr;
     gap: 5px;
@@ -529,18 +547,20 @@
 
   .admin-chat-layout {
     display: flex;
-    min-height: calc(100vh - 255px);
+    height: auto;
+    min-height: 0;
     flex-direction: column;
   }
 
   .admin-chat-conversation-list {
-    max-height: 180px;
+    flex: 0 0 180px;
+    max-height: none;
     border-right: 0;
     border-bottom: 1px solid #e2e8f0;
   }
 
   .admin-chat-thread {
-    min-height: 420px;
+    min-height: 0;
   }
 
   .admin-chat-message {

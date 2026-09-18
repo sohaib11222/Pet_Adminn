@@ -14,8 +14,10 @@ import {
 import { Link } from "react-router-dom";
 import CountUp from "react-countup";
 import { apiRequest, getCurrentUser } from "../../../api/client";
+import { useLanguage } from "../../../contexts/LanguageContext";
 
 const Admin_Dashboard = () => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [stats, setStats] = useState(null);
@@ -49,7 +51,7 @@ const Admin_Dashboard = () => {
       setDeliveryPerformance(deliveryRes?.data || deliveryRes || null);
     } catch (e) {
       if (!silent) {
-        setError(e?.message || "Failed to load dashboard");
+        setError(e?.message || t("dashboard.loadFailed", "Failed to load dashboard"));
       }
     } finally {
       if (!silent) {
@@ -82,6 +84,10 @@ const Admin_Dashboard = () => {
   const pharmacyDeliveryRows = Array.isArray(deliveryPerformance?.pharmacies)
     ? deliveryPerformance.pharmacies
     : [];
+  const statusLabel = (value) => {
+    const normalized = String(value || "").toLowerCase();
+    return normalized ? t(`status.${normalized}`, value) : t("common.unknown");
+  };
 
   return (
     <>
@@ -100,14 +106,14 @@ const Admin_Dashboard = () => {
                 <div className="col-sm-12">
                   <ul className="breadcrumb">
                     <li className="breadcrumb-item">
-                      <Link to="#">Dashboard </Link>
+                      <Link to="#">{t("dashboard.dashboard")}</Link>
                     </li>
                     <li className="breadcrumb-item">
                       <i className="feather-chevron-right">
                         <FeatherIcon icon="chevron-right" />
                       </i>
                     </li>
-                    <li className="breadcrumb-item active">Admin Dashboard</li>
+                    <li className="breadcrumb-item active">{t("dashboard.title")}</li>
                   </ul>
                 </div>
               </div>
@@ -117,9 +123,9 @@ const Admin_Dashboard = () => {
               <div className="col-12 col-xl-12">
                 <div className="card">
                   <div className="card-header pb-0">
-                    <h4 className="card-title d-inline-block">Recent Veterinarians</h4>{" "}
+                    <h4 className="card-title d-inline-block">{t("dashboard.recentVeterinarians")}</h4>{" "}
                     <Link to="/users/veterinarians" className="float-end patient-views">
-                      Show all
+                      {t("dashboard.showAll")}
                     </Link>
                   </div>
                   <div className="card-block table-dash">
@@ -132,10 +138,10 @@ const Admin_Dashboard = () => {
                                 <input className="form-check-input" type="checkbox" />
                               </div>
                             </th>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Status</th>
+                            <th>{t("common.id")}</th>
+                            <th>{t("common.name")}</th>
+                            <th>{t("common.email")}</th>
+                            <th>{t("common.status")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -165,7 +171,7 @@ const Admin_Dashboard = () => {
                                 </td>
                                 <td>{email}</td>
                                 <td>
-                                  <button className="custom-badge status-green ">{status}</button>
+                                  <button className="custom-badge status-green ">{statusLabel(status)}</button>
                                 </td>
                               </tr>
                             );
@@ -173,7 +179,7 @@ const Admin_Dashboard = () => {
                           {!loading && recentVets.length === 0 ? (
                             <tr>
                               <td colSpan={5} className="text-center">
-                                No veterinarians
+                                {t("dashboard.noVeterinarians")}
                               </td>
                             </tr>
                           ) : null}
@@ -190,9 +196,9 @@ const Admin_Dashboard = () => {
                 <div className="col-md-6">
                   <div className="morning-user">
                     <h2>
-                      Good Morning, <span>{currentUser?.name || "Admin"}</span>
+                      {t("dashboard.goodMorning")} <span>{currentUser?.name || t("dashboard.admin")}</span>
                     </h2>
-                    <p>Have a nice day at work</p>
+                    <p>{t("dashboard.niceDay")}</p>
                   </div>
                 </div>
                 <div className="col-md-6 position-blk">
@@ -208,24 +214,24 @@ const Admin_Dashboard = () => {
                 <div className="card">
                   <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div>
-                      <h4 className="card-title mb-0">Pharmacy Delivery Performance</h4>
-                      <small className="text-muted">Late orders update automatically after their promised delivery date.</small>
+                      <h4 className="card-title mb-0">{t("dashboard.deliveryPerformance")}</h4>
+                      <small className="text-muted">{t("dashboard.deliveryHint")}</small>
                     </div>
-                    <Link to="/orders" className="patient-views">View Orders</Link>
+                    <Link to="/orders" className="patient-views">{t("dashboard.viewOrders")}</Link>
                   </div>
                   <div className="card-body p-0 table-dash">
                     <div className="table-responsive admin-dashboard-table-wrap">
                       <table className="table mb-0 border-0 datatable custom-table">
                         <thead>
                           <tr>
-                            <th>Pharmacy</th>
-                            <th>Type</th>
-                            <th>Total Orders</th>
-                            <th>On Time</th>
-                            <th>Late</th>
-                            <th>Awaiting Delivery</th>
-                            <th>Average Delivery Time</th>
-                            <th>On-Time Delivery</th>
+                            <th>{t("dashboard.pharmacy")}</th>
+                            <th>{t("common.type")}</th>
+                            <th>{t("dashboard.totalOrders")}</th>
+                            <th>{t("dashboard.onTime")}</th>
+                            <th>{t("dashboard.late")}</th>
+                            <th>{t("dashboard.awaitingDelivery")}</th>
+                            <th>{t("dashboard.averageDeliveryTime")}</th>
+                            <th>{t("dashboard.onTimeDelivery")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -237,13 +243,13 @@ const Admin_Dashboard = () => {
                               <td><span className="text-success fw-semibold">{pharmacy.onTimeOrders}</span></td>
                               <td><span className={pharmacy.lateOrders ? "text-danger fw-semibold" : "text-muted"}>{pharmacy.lateOrders}</span></td>
                               <td>{pharmacy.awaitingDeliveryOrders}</td>
-                              <td>{pharmacy.averageDeliveryTime === null ? "—" : `${pharmacy.averageDeliveryTime} Days`}</td>
+                              <td>{pharmacy.averageDeliveryTime === null ? "—" : `${pharmacy.averageDeliveryTime} ${t("common.days")}`}</td>
                               <td>{pharmacy.onTimeDeliveryPercentage === null ? "—" : `${pharmacy.onTimeDeliveryPercentage}%`}</td>
                             </tr>
                           ))}
                           {!loading && pharmacyDeliveryRows.length === 0 ? (
                             <tr>
-                              <td colSpan={8} className="text-center py-4">No pharmacy delivery data yet.</td>
+                               <td colSpan={8} className="text-center py-4">{t("dashboard.noDeliveryData")}</td>
                             </tr>
                           ) : null}
                         </tbody>
@@ -267,7 +273,7 @@ const Admin_Dashboard = () => {
                     <img src={calendar}  alt="#" />
                   </div>
                   <div className="dash-content dash-count flex-grow-1">
-                    <h4>Appointments</h4>
+                    <h4>{t("dashboard.appointments")}</h4>
                     <h2>
                       {" "}
                       <CountUp delay={0.1} end={statsAppointments} duration={0.6} />
@@ -279,7 +285,7 @@ const Admin_Dashboard = () => {
                         </i>
                         40%
                       </span>{" "}
-                      vs last month
+                      {t("dashboard.vsLastMonth")}
                     </p>
                   </div>
                 </div>
@@ -290,7 +296,7 @@ const Admin_Dashboard = () => {
                     <img src={profile_add}  alt="#" />
                   </div>
                   <div className="dash-content dash-count">
-                    <h4>Pet Owners</h4>
+                    <h4>{t("dashboard.petOwners")}</h4>
                     <h2>
                       <CountUp delay={0.1} end={statsPetOwners} duration={0.6} />
                     </h2>
@@ -301,7 +307,7 @@ const Admin_Dashboard = () => {
                           </i>
                         20%
                       </span>{" "}
-                      vs last month
+                      {t("dashboard.vsLastMonth")}
                     </p>
                   </div>
                 </div>
@@ -312,7 +318,7 @@ const Admin_Dashboard = () => {
                     <img src={scissor} alt="#" />
                   </div>
                   <div className="dash-content dash-count">
-                    <h4>Veterinarians</h4>
+                    <h4>{t("dashboard.veterinarians")}</h4>
                     <h2>
                       <CountUp delay={0.1} end={statsTotalVets} duration={0.6} />
                     </h2>
@@ -323,7 +329,7 @@ const Admin_Dashboard = () => {
                           </i>
                         15%
                       </span>{" "}
-                      vs last month
+                      {t("dashboard.vsLastMonth")}
                     </p>
                   </div>
                 </div>
@@ -334,7 +340,7 @@ const Admin_Dashboard = () => {
                     <img src={empty_wallet} alt="#" />
                   </div>
                   <div className="dash-content dash-count">
-                    <h4>Earnings</h4>
+                    <h4>{t("dashboard.earnings")}</h4>
                     <h2>
                       $<CountUp delay={0.1} end={statsEarnings} duration={0.6} />
                     </h2>
@@ -345,7 +351,7 @@ const Admin_Dashboard = () => {
                           </i>
                         30%
                       </span>{" "}
-                      vs last month
+                      {t("dashboard.vsLastMonth")}
                     </p>
                   </div>
                 </div>
@@ -356,13 +362,13 @@ const Admin_Dashboard = () => {
                 <div className="card">
                   <div className="card-header">
                     <h4 className="card-title d-inline-block">
-                      Upcoming Appointments
+                      {t("dashboard.upcomingAppointments")}
                     </h4>{" "}
                     <Link
                       to="/appointments"
                       className="patient-views float-end"
                     >
-                      Show all
+                       {t("dashboard.showAll")}
                     </Link>
                   </div>
                   <div className="card-body p-0 table-dash">
@@ -379,11 +385,11 @@ const Admin_Dashboard = () => {
                                 />
                               </div>
                             </th>
-                            <th>No</th>
-                            <th>My Pet name</th>
-                            <th>Doctor</th>
-                            <th>Time</th>
-                            <th>Disease</th>
+                            <th>{t("dashboard.number")}</th>
+                            <th>{t("dashboard.myPetName")}</th>
+                            <th>{t("dashboard.doctor")}</th>
+                            <th>{t("common.time")}</th>
+                            <th>{t("dashboard.disease")}</th>
                             <th />
                           </tr>
                         </thead>
@@ -421,7 +427,7 @@ const Admin_Dashboard = () => {
                                 </td>
                                 <td>
                                   <button className="custom-badge status-green ">
-                                    {status}
+                                    {statusLabel(status)}
                                   </button>
                                 </td>
                                 <td className="text-end">
@@ -437,7 +443,7 @@ const Admin_Dashboard = () => {
                                     <div className="dropdown-menu dropdown-menu-end">
                                       <Link className="dropdown-item" to="/appointments">
                                         <i className="fa-solid fa-pen-to-square m-r-5" />{" "}
-                                        View
+                                         {t("common.view")}
                                       </Link>
                                     </div>
                                   </div>
@@ -448,7 +454,7 @@ const Admin_Dashboard = () => {
                           {!loading && recentAppointments.length === 0 ? (
                             <tr>
                               <td colSpan={7} className="text-center">
-                                No appointments
+                                 {t("dashboard.noAppointments")}
                               </td>
                             </tr>
                           ) : null}
@@ -464,13 +470,13 @@ const Admin_Dashboard = () => {
                 <div className="card">
                   <div className="card-header pb-0">
                     <h4 className="card-title d-inline-block">
-                      Recent Pets{" "}
+                       {t("dashboard.recentPets")}{" "}
                     </h4>{" "}
                     <Link
                       to="/pets"
                       className="float-end patient-views"
                     >
-                      Show all
+                       {t("dashboard.showAll")}
                     </Link>
                   </div>
                   <div className="card-block table-dash">
@@ -487,12 +493,12 @@ const Admin_Dashboard = () => {
                                 />
                               </div>
                             </th>
-                            <th>No</th>
-                            <th>My Pet name</th>
-                            <th>Age</th>
-                            <th>Date of Birth</th>
-                            <th>Diagnosis</th>
-                            <th>Triage</th>
+                            <th>{t("dashboard.number")}</th>
+                            <th>{t("dashboard.myPetName")}</th>
+                            <th>{t("dashboard.age")}</th>
+                            <th>{t("dashboard.dateOfBirth")}</th>
+                            <th>{t("dashboard.diagnosis")}</th>
+                            <th>{t("dashboard.triage")}</th>
                             <th />
                           </tr>
                         </thead>
@@ -528,7 +534,7 @@ const Admin_Dashboard = () => {
                                 <td>{[species, breed].filter(Boolean).join(" ")}</td>
                                 <td>
                                   <button className="custom-badge status-green ">
-                                    Active
+                                     {t("dashboard.active")}
                                   </button>
                                 </td>
                                 <td className="text-end">
@@ -544,7 +550,7 @@ const Admin_Dashboard = () => {
                                     <div className="dropdown-menu dropdown-menu-end">
                                       <Link className="dropdown-item" to="/pets">
                                         <i className="fa-solid fa-pen-to-square m-r-5" />{" "}
-                                        View
+                                         {t("common.view")}
                                       </Link>
                                     </div>
                                   </div>
@@ -555,7 +561,7 @@ const Admin_Dashboard = () => {
                           {!loading && recentPets.length === 0 ? (
                             <tr>
                               <td colSpan={8} className="text-center">
-                                No pets
+                                 {t("dashboard.noPets")}
                               </td>
                             </tr>
                           ) : null}
@@ -572,14 +578,14 @@ const Admin_Dashboard = () => {
       <div className="modal-content">
         <div className="modal-body text-center">
           <img src={imagesend} alt="#" width={50} height={46} />
-          <h3>Are you sure want to delete this ?</h3>
+          <h3>{t("dashboard.deleteConfirm")}</h3>
           <div className="m-t-20">
             {" "}
             <Link to="#" className="btn btn-white me-2" data-bs-dismiss="modal">
-              Close
+               {t("dashboard.close")}
             </Link>
             <button type="submit" className="btn btn-danger">
-              Delete
+               {t("dashboard.delete")}
             </button>
           </div>
         </div>
@@ -590,14 +596,14 @@ const Admin_Dashboard = () => {
       <div className="modal-content">
         <div className="modal-body text-center">
           <img src={imagesend} alt="#" width={50} height={46} />
-          <h3>Are you sure want to delete this ?</h3>
+          <h3>{t("dashboard.deleteConfirm")}</h3>
           <div className="m-t-20">
             {" "}
             <Link to="#" className="btn btn-white me-2" data-bs-dismiss="modal">
-              Close
+               {t("dashboard.close")}
             </Link>
             <button type="submit" className="btn btn-danger">
-              Delete
+               {t("dashboard.delete")}
             </button>
           </div>
         </div>

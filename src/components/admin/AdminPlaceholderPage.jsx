@@ -3,8 +3,11 @@ import React from "react";
 import Header from "../Header";
 import Sidebar from "../Sidebar";
 import PropTypes from "prop-types";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const AdminPlaceholderPage = (props) => {
+  const { translateText: ui } = useLanguage();
+
   return (
     <>
       <Header />
@@ -14,14 +17,14 @@ const AdminPlaceholderPage = (props) => {
           <div className="page-header">
             <div className="row">
               <div className="col-sm-12">
-                <h3 className="page-title">{props.title}</h3>
+                <h3 className="page-title">{ui(props.title)}</h3>
               </div>
             </div>
           </div>
 
           <div className="card">
             <div className="card-body">
-              <p className="mb-0">This page is ready for API integration.</p>
+              <p className="mb-0">{ui("This page is ready for API integration.")}</p>
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Header from "../Header";
 import Sidebar from "../Sidebar";
 import { apiRequest } from "../../api/client";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const DEFAULT_VALUES = {
   address: "",
@@ -11,6 +12,7 @@ const DEFAULT_VALUES = {
 };
 
 const FooterOptionsPage = () => {
+  const { t, translateText: ui } = useLanguage();
   const [values, setValues] = useState(DEFAULT_VALUES);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,7 +40,7 @@ const FooterOptionsPage = () => {
         socialLinks: Array.isArray(data.socialLinks) ? data.socialLinks.map(withStableKey) : [],
       });
     } catch (e) {
-      setError(e?.message || "Failed to load footer options");
+      setError(ui(e?.message || "Failed to load footer options"));
     } finally {
       setLoading(false);
     }
@@ -90,10 +92,10 @@ const FooterOptionsPage = () => {
           socialLinks: values.socialLinks.map(({ platform, url, isActive }) => ({ platform, url, isActive })),
         },
       });
-      setSuccess("Footer options saved successfully.");
+      setSuccess(ui("Footer options saved successfully."));
       window.dispatchEvent(new Event("pa-admin-data-changed"));
     } catch (e) {
-      setError(e?.message || "Failed to save footer options");
+      setError(ui(e?.message || "Failed to save footer options"));
     } finally {
       setSaving(false);
     }
@@ -109,9 +111,9 @@ const FooterOptionsPage = () => {
             <div className="row">
               <div className="col-sm-12">
                 <ul className="breadcrumb">
-                  <li className="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+                  <li className="breadcrumb-item"><a href="/dashboard">{t("nav.dashboard")}</a></li>
                   <li className="breadcrumb-item"><i className="feather-chevron-right" /></li>
-                  <li className="breadcrumb-item active">Footer Options</li>
+                  <li className="breadcrumb-item active">{ui("Footer Options")}</li>
                 </ul>
               </div>
             </div>
@@ -121,19 +123,19 @@ const FooterOptionsPage = () => {
             <div className="col-lg-8 col-xl-7">
               <div className="card">
                 <div className="card-header">
-                  <h4 className="card-title mb-0">Footer Options</h4>
-                  <p className="text-muted mb-0 mt-1">These values appear in the public website footer and Contact Us page.</p>
+                  <h4 className="card-title mb-0">{ui("Footer Options")}</h4>
+                  <p className="text-muted mb-0 mt-1">{ui("These values appear in the public website footer and Contact Us page.")}</p>
                 </div>
                 <div className="card-body">
                   {error ? <div className="alert alert-danger">{error}</div> : null}
                   {success ? <div className="alert alert-success">{success}</div> : null}
 
                   {loading ? (
-                    <div className="text-center py-5">Loading footer options...</div>
+                    <div className="text-center py-5">{ui("Loading footer options...")}</div>
                   ) : (
                     <form onSubmit={saveOptions}>
                       <div className="mb-3">
-                        <label className="form-label">Address / Location</label>
+                        <label className="form-label">{ui("Address / Location")}</label>
                         <textarea
                           className="form-control"
                           rows="3"
@@ -144,7 +146,7 @@ const FooterOptionsPage = () => {
                         />
                       </div>
                       <div className="mb-3">
-                        <label className="form-label">Support Email</label>
+                        <label className="form-label">{ui("Support Email")}</label>
                         <input
                           type="email"
                           className="form-control"
@@ -155,7 +157,7 @@ const FooterOptionsPage = () => {
                         />
                       </div>
                       <div className="mb-4">
-                        <label className="form-label">Phone Number</label>
+                        <label className="form-label">{ui("Phone Number")}</label>
                         <input
                           type="text"
                           className="form-control"
@@ -168,23 +170,23 @@ const FooterOptionsPage = () => {
 
                       <div className="d-flex justify-content-between align-items-center mb-3">
                         <div>
-                          <h5 className="mb-1">Social Media Links</h5>
-                          <p className="text-muted mb-0">Only active links are shown in the website footer.</p>
+                          <h5 className="mb-1">{ui("Social Media Links")}</h5>
+                          <p className="text-muted mb-0">{ui("Only active links are shown in the website footer.")}</p>
                         </div>
                         <button type="button" className="btn btn-outline-primary btn-sm" onClick={addSocialLink}>
-                          Add Link
+                          {ui("Add Link")}
                         </button>
                       </div>
 
                       {values.socialLinks.length === 0 ? (
-                        <div className="text-muted border rounded p-3 mb-4">No social links configured.</div>
+                        <div className="text-muted border rounded p-3 mb-4">{ui("No social links configured.")}</div>
                       ) : null}
 
                       {values.socialLinks.map((link, index) => (
                         <div className="border rounded p-3 mb-3" key={link._clientKey}>
                           <div className="row g-2 align-items-end">
                             <div className="col-md-3">
-                              <label className="form-label">Platform</label>
+                              <label className="form-label">{ui("Platform")}</label>
                               <input
                                 type="text"
                                 className="form-control"
@@ -195,7 +197,7 @@ const FooterOptionsPage = () => {
                               />
                             </div>
                             <div className="col-md-5">
-                              <label className="form-label">URL</label>
+                              <label className="form-label">{ui("URL")}</label>
                               <input
                                 type="url"
                                 className="form-control"
@@ -213,7 +215,7 @@ const FooterOptionsPage = () => {
                                   checked={link.isActive !== false}
                                   onChange={(event) => updateSocialLink(index, "isActive", event.target.checked)}
                                 />
-                                <span className="form-check-label">Active</span>
+                                <span className="form-check-label">{t("common.active")}</span>
                               </label>
                             </div>
                             <div className="col-md-2 d-grid">
@@ -223,7 +225,7 @@ const FooterOptionsPage = () => {
                                 onClick={() => removeSocialLink(index)}
                               >
                                 <i className="fa-solid fa-trash-can me-1" aria-hidden="true" />
-                                Remove
+                                {ui("Remove")}
                               </button>
                             </div>
                           </div>
@@ -231,7 +233,7 @@ const FooterOptionsPage = () => {
                       ))}
 
                       <button type="submit" className="btn btn-primary" disabled={saving}>
-                        {saving ? "Saving..." : "Save Footer Options"}
+                        {saving ? ui("Saving...") : ui("Save Footer Options")}
                       </button>
                     </form>
                   )}

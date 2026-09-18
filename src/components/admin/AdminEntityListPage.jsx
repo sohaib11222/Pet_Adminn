@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Form, Input, InputNumber, Modal, Select, Switch, Table } from "antd";
 import FeatherIcon from "feather-icons-react/build/FeatherIcon";
@@ -14,6 +14,7 @@ import {
 } from "../imagepath";
 
 import { apiRequest, getApiBaseUrl } from "../../api/client";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const formatDate = (value) => {
   if (!value) return "";
@@ -75,10 +76,29 @@ const buildCommonDatasource = (prefix) =>
   }));
 
 const AdminEntityListPage = ({ entity }) => {
+  const { t, translateText: translateUi } = useLanguage();
+  const label = useCallback((value) => {
+    const normalized = String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    if (!normalized) return value;
+    const direct = translateUi(value);
+    if (direct !== value) return direct;
+    return t(`admin.labels.${normalized}`, t(`status.${normalized}`, t(`common.${normalized}`, value)));
+  }, [t, translateUi]);
+  const statusLabel = useCallback((value) => {
+    const normalized = String(value || "").toLowerCase();
+    return normalized ? label(value) : "-";
+  }, [label]);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setRawError] = useState("");
+  const setError = useCallback((message) => {
+    setRawError(typeof message === "string" ? label(message) : message);
+  }, [label]);
   const [data, setData] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
 
@@ -250,7 +270,7 @@ const AdminEntityListPage = ({ entity }) => {
       VERIFICATION_DOCUMENT: "Verification document",
       LICENSE_DOCUMENT: "Professional licence",
     };
-    return labels[upper(type)] || formatDetailLabel(type || "Verification document");
+    return label(labels[upper(type)] || formatDetailLabel(type || "Verification document"));
   };
 
   const veterinarianDocuments = useMemo(() => {
@@ -281,14 +301,14 @@ const AdminEntityListPage = ({ entity }) => {
 
   const renderDetailValue = (value, depth = 0) => {
     if (value === null || value === undefined || value === "") return "-";
-    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (typeof value === "boolean") return label(value ? "Yes" : "No");
     if (
       typeof value === "string" &&
       (/^https?:\/\//i.test(value) || value.startsWith("/uploads/"))
     ) {
       return (
         <a href={toPublicUrl(value)} target="_blank" rel="noreferrer">
-          Open link
+          {label("Open link")}
         </a>
       );
     }
@@ -313,7 +333,7 @@ const AdminEntityListPage = ({ entity }) => {
             .filter(([key]) => !["_id", "__v", "password"].includes(key))
             .map(([key, nestedValue]) => (
               <div className="admin-detail-object__row" key={key}>
-                <span className="admin-detail-object__key">{formatDetailLabel(key)}</span>
+                <span className="admin-detail-object__key">{label(formatDetailLabel(key))}</span>
                 <span>{renderDetailValue(nestedValue, depth + 1)}</span>
               </div>
             ))}
@@ -408,7 +428,7 @@ const AdminEntityListPage = ({ entity }) => {
 
   const handleDeleteProduct = async (id) => {
     if (!id) return;
-    const ok = window.confirm("Delete this product?");
+    const ok = window.confirm(label("Delete this product?"));
     if (!ok) return;
     setLoading(true);
     setError("");
@@ -495,7 +515,7 @@ const AdminEntityListPage = ({ entity }) => {
 
   const handleDeletePetStore = async (id) => {
     if (!id) return;
-    const ok = window.confirm("Delete this pet store?");
+    const ok = window.confirm(label("Delete this pet store?"));
     if (!ok) return;
     setLoading(true);
     setError("");
@@ -575,7 +595,7 @@ const AdminEntityListPage = ({ entity }) => {
 
   const handleRefundTransaction = async (id) => {
     if (!id) return;
-    const ok = window.confirm("Refund this transaction?");
+    const ok = window.confirm(label("Refund this transaction?"));
     if (!ok) return;
     setLoading(true);
     setError("");
@@ -605,7 +625,7 @@ const AdminEntityListPage = ({ entity }) => {
 
   const handleDeleteUser = async (id) => {
     if (!id) return;
-    const ok = window.confirm("Delete this user? This cannot be undone.");
+    const ok = window.confirm(label("Delete this user? This cannot be undone."));
     if (!ok) return;
     setLoading(true);
     setError("");
@@ -1470,7 +1490,7 @@ const AdminEntityListPage = ({ entity }) => {
 
   const handleDeleteSpecialization = async (id) => {
     if (!id) return;
-    const ok = window.confirm("Delete this specialization?");
+    const ok = window.confirm(label("Delete this specialization?"));
     if (!ok) return;
     setLoading(true);
     setError("");
@@ -1556,7 +1576,7 @@ const AdminEntityListPage = ({ entity }) => {
 
   const handleDeleteInsurance = async (id) => {
     if (!id) return;
-    const ok = window.confirm("Delete this insurance company?");
+    const ok = window.confirm(label("Delete this insurance company?"));
     if (!ok) return;
     setLoading(true);
     setError("");
@@ -1714,7 +1734,7 @@ const AdminEntityListPage = ({ entity }) => {
 
   const handleDeleteAnnouncement = async (id) => {
     if (!id) return;
-    const ok = window.confirm("Delete this announcement?");
+    const ok = window.confirm(label("Delete this announcement?"));
     if (!ok) return;
     setLoading(true);
     setError("");
@@ -1748,7 +1768,7 @@ const AdminEntityListPage = ({ entity }) => {
 
   async function handleRejectVet(id) {
     if (!id) return;
-    const reason = window.prompt("Rejection reason (optional):") || undefined;
+    const reason = window.prompt(label("Rejection reason (optional):")) || undefined;
     setLoading(true);
     try {
       await apiRequest("/auth/reject-veterinarian", {
@@ -1784,7 +1804,7 @@ const AdminEntityListPage = ({ entity }) => {
 
   async function handleRejectPetStore(id) {
     if (!id) return;
-    const reason = window.prompt("Rejection reason (optional):") || undefined;
+    const reason = window.prompt(label("Rejection reason (optional):")) || undefined;
     setLoading(true);
     try {
       await apiRequest("/auth/reject-pet-store", {
@@ -1802,7 +1822,7 @@ const AdminEntityListPage = ({ entity }) => {
 
   async function handleDeleteMedicalRecord(id) {
     if (!id) return;
-    const ok = window.confirm("Delete this medical record? This cannot be undone.");
+    const ok = window.confirm(label("Delete this medical record? This cannot be undone."));
     if (!ok) return;
     setLoading(true);
     try {
@@ -1843,7 +1863,7 @@ const AdminEntityListPage = ({ entity }) => {
         dataIndex: "status",
         sorter: (a, b) => (a?.status || "").length - (b?.status || "").length,
         render: (value) => (
-          <span className={getStatusBadgeClass(value)}>{upper(value) || "-"}</span>
+           <span className={getStatusBadgeClass(value)}>{statusLabel(value)}</span>
         ),
       },
       {
@@ -1965,14 +1985,14 @@ const AdminEntityListPage = ({ entity }) => {
           title: "Role",
           dataIndex: "role",
           sorter: (a, b) => (a?.role || "").length - (b?.role || "").length,
-          render: (value) => <span title={upper(value)}>{roleLabel(value)}</span>,
+          render: (value) => <span title={label(roleLabel(value))}>{label(roleLabel(value))}</span>,
         },
         {
           title: "Status",
           dataIndex: "status",
           sorter: (a, b) => (a?.status || "").length - (b?.status || "").length,
           render: (value) => (
-            <span className={getStatusBadgeClass(value)}>{upper(value) || "-"}</span>
+           <span className={getStatusBadgeClass(value)}>{statusLabel(value)}</span>
           ),
         },
         {
@@ -1992,7 +2012,7 @@ const AdminEntityListPage = ({ entity }) => {
                   onClick={() => handleUpdateUserStatus(record?._id, "APPROVED")}
                   disabled={upper(record?.status) === "APPROVED"}
                 >
-                  Approve
+                  {label("Approve")}
                 </button>
                 {upper(record?.status) === "BLOCKED" ? (
                   <button
@@ -2000,7 +2020,7 @@ const AdminEntityListPage = ({ entity }) => {
                     className="btn btn-sm btn-warning"
                     onClick={() => handleUpdateUserStatus(record?._id, "APPROVED")}
                   >
-                    Unblock
+                    {label("Unblock")}
                   </button>
                 ) : (
                   <button
@@ -2009,7 +2029,7 @@ const AdminEntityListPage = ({ entity }) => {
                     onClick={() => handleUpdateUserStatus(record?._id, "BLOCKED")}
                     disabled={upper(record?.status) === "BLOCKED"}
                   >
-                    Block
+                    {label("Block")}
                   </button>
                 )}
                 <button
@@ -2017,7 +2037,7 @@ const AdminEntityListPage = ({ entity }) => {
                   className="btn btn-sm btn-outline-danger"
                   onClick={() => handleDeleteUser(record?._id)}
                 >
-                  Delete
+                  {label("Delete")}
                 </button>
               </div>
             </div>
@@ -2036,13 +2056,13 @@ const AdminEntityListPage = ({ entity }) => {
         {
           title: "Type",
           dataIndex: "planType",
-          render: (value) => upper(value) || "-",
+          render: (value) => label(upper(value) || "-"),
         },
         {
           title: "Status",
           dataIndex: "status",
           render: (value) => (
-            <span className={getStatusBadgeClass(value)}>{upper(value) || "-"}</span>
+           <span className={getStatusBadgeClass(value)}>{statusLabel(value)}</span>
           ),
         },
         {
@@ -2068,7 +2088,7 @@ const AdminEntityListPage = ({ entity }) => {
                 className="btn btn-sm btn-primary"
                 onClick={() => openEditPlan(record)}
               >
-                Edit Price
+                {label("Edit Price")}
               </button>
             </div>
           ),
@@ -2112,7 +2132,7 @@ const AdminEntityListPage = ({ entity }) => {
               new Date(record.endDate) > new Date();
             return (
               <span className={getStatusBadgeClass(isCurrent ? "ACTIVE" : "EXPIRED")}>
-                {isCurrent ? "ACTIVE" : "EXPIRED"}
+                {statusLabel(isCurrent ? "ACTIVE" : "EXPIRED")}
               </span>
             );
           },
@@ -2152,14 +2172,14 @@ const AdminEntityListPage = ({ entity }) => {
                   className="btn btn-sm btn-primary"
                   onClick={() => openEditSpecialization(record)}
                 >
-                  Edit
+                  {label("Edit")}
                 </button>
                 <button
                   type="button"
                   className="btn btn-sm btn-danger"
                   onClick={() => handleDeleteSpecialization(record?._id)}
                 >
-                  Delete
+                  {label("Delete")}
                 </button>
               </div>
             </div>
@@ -2185,7 +2205,7 @@ const AdminEntityListPage = ({ entity }) => {
           dataIndex: "isActive",
           render: (value) => (
             <span className={getStatusBadgeClass(value ? "ACTIVE" : "BLOCKED")}>
-              {value ? "ACTIVE" : "INACTIVE"}
+              {value ? label("ACTIVE") : label("INACTIVE")}
             </span>
           ),
         },
@@ -2205,21 +2225,21 @@ const AdminEntityListPage = ({ entity }) => {
                   className="btn btn-sm btn-primary"
                   onClick={() => openEditInsurance(record)}
                 >
-                  Edit
+                  {label("Edit")}
                 </button>
                 <button
                   type="button"
                   className={`btn btn-sm ${record?.isActive ? "btn-warning" : "btn-success"}`}
                   onClick={() => handleToggleInsurance(record)}
                 >
-                  {record?.isActive ? "Deactivate" : "Activate"}
+                  {record?.isActive ? label("Deactivate") : label("Activate")}
                 </button>
                 <button
                   type="button"
                   className="btn btn-sm btn-danger"
                   onClick={() => handleDeleteInsurance(record?._id)}
                 >
-                  Delete
+                  {label("Delete")}
                 </button>
               </div>
             </div>
@@ -2238,24 +2258,24 @@ const AdminEntityListPage = ({ entity }) => {
         {
           title: "Type",
           dataIndex: "announcementType",
-          render: (value) => upper(value) || "-",
+          render: (value) => label(upper(value) || "-"),
         },
         {
           title: "Priority",
           dataIndex: "priority",
-          render: (value) => upper(value) || "-",
+          render: (value) => label(upper(value) || "-"),
         },
         {
           title: "Pinned",
           dataIndex: "isPinned",
-          render: (value) => (value ? "YES" : "NO"),
+          render: (value) => (value ? label("YES") : label("NO")),
         },
         {
           title: "Active",
           dataIndex: "isActive",
           render: (value) => (
             <span className={getStatusBadgeClass(value ? "ACTIVE" : "BLOCKED")}>
-              {value ? "ACTIVE" : "INACTIVE"}
+              {value ? label("ACTIVE") : label("INACTIVE")}
             </span>
           ),
         },
@@ -2265,7 +2285,7 @@ const AdminEntityListPage = ({ entity }) => {
           render: (_, record) => {
             const t = upper(record?.expiryType);
             if (t === "EXPIRE_AFTER_DATE") return formatDate(record?.expiryDate);
-            return t || "-";
+            return label(t || "-");
           },
         },
         {
@@ -2284,14 +2304,14 @@ const AdminEntityListPage = ({ entity }) => {
                   className="btn btn-sm btn-primary"
                   onClick={() => openEditAnnouncement(record)}
                 >
-                  Edit
+                  {label("Edit")}
                 </button>
                 <button
                   type="button"
                   className="btn btn-sm btn-danger"
                   onClick={() => handleDeleteAnnouncement(record?._id)}
                 >
-                  Delete
+                  {label("Delete")}
                 </button>
               </div>
             </div>
@@ -2332,7 +2352,7 @@ const AdminEntityListPage = ({ entity }) => {
           dataIndex: "status",
           sorter: (a, b) => (a?.status || "").length - (b?.status || "").length,
           render: (value) => (
-            <span className={getStatusBadgeClass(value)}>{upper(value) || "-"}</span>
+           <span className={getStatusBadgeClass(value)}>{statusLabel(value)}</span>
           ),
         },
         {
@@ -2351,14 +2371,14 @@ const AdminEntityListPage = ({ entity }) => {
                   className="btn btn-sm btn-success"
                   onClick={() => handleApprovePetStore(record?._id)}
                 >
-                  Approve
+                  {label("Approve")}
                 </button>
                 <button
                   type="button"
                   className="btn btn-sm btn-danger"
                   onClick={() => handleRejectPetStore(record?._id)}
                 >
-                  Reject
+                  {label("Reject")}
                 </button>
               </div>
             </div>
@@ -2399,7 +2419,7 @@ const AdminEntityListPage = ({ entity }) => {
           dataIndex: "isActive",
           render: (value) => (
             <span className={getStatusBadgeClass(value ? "ACTIVE" : "BLOCKED")}>
-              {value ? "ACTIVE" : "INACTIVE"}
+              {value ? label("ACTIVE") : label("INACTIVE")}
             </span>
           ),
         },
@@ -2453,7 +2473,7 @@ const AdminEntityListPage = ({ entity }) => {
                 className="btn btn-sm btn-danger"
                 onClick={() => handleDeleteMedicalRecord(record?._id)}
               >
-                Delete
+                {label("Delete")}
               </button>
             </div>
           ),
@@ -2483,7 +2503,7 @@ const AdminEntityListPage = ({ entity }) => {
           dataIndex: "isActive",
           render: (value) => (
             <span className={getStatusBadgeClass(value ? "ACTIVE" : "BLOCKED")}>
-              {value ? "ACTIVE" : "INACTIVE"}
+              {value ? label("ACTIVE") : label("INACTIVE")}
             </span>
           ),
         },
@@ -2505,7 +2525,7 @@ const AdminEntityListPage = ({ entity }) => {
                 className="btn btn-sm btn-primary"
                 onClick={() => openEditVaccine(record)}
               >
-                Edit
+                {label("Edit")}
               </button>
             </div>
           ),
@@ -2532,7 +2552,7 @@ const AdminEntityListPage = ({ entity }) => {
         {
           title: "Type",
           dataIndex: "bookingType",
-          render: (value) => upper(value) || "-",
+          render: (value) => label(upper(value) || "-"),
         },
         {
           title: "Veterinarian",
@@ -2553,13 +2573,13 @@ const AdminEntityListPage = ({ entity }) => {
           title: "Status",
           dataIndex: "status",
           render: (value) => (
-            <span className={getStatusBadgeClass(value)}>{upper(value) || "-"}</span>
+           <span className={getStatusBadgeClass(value)}>{statusLabel(value)}</span>
           ),
         },
         {
           title: "Payment",
           dataIndex: "paymentStatus",
-          render: (value) => upper(value) || "-",
+          render: (value) => label(upper(value) || "-"),
         },
         {
           title: "",
@@ -2571,7 +2591,7 @@ const AdminEntityListPage = ({ entity }) => {
                 className="btn btn-sm btn-primary"
                 onClick={() => openAppointmentDetails(record)}
               >
-                View Details
+                {label("View Details")}
               </button>
             </div>
           ),
@@ -2603,7 +2623,7 @@ const AdminEntityListPage = ({ entity }) => {
         {
           title: "Type",
           dataIndex: "reviewType",
-          render: (value) => upper(value) || "-",
+          render: (value) => label(upper(value) || "-"),
         },
         {
           title: "Review",
@@ -2645,7 +2665,7 @@ const AdminEntityListPage = ({ entity }) => {
           dataIndex: "status",
           sorter: (a, b) => (a?.status || "").length - (b?.status || "").length,
           render: (value) => (
-            <span className={getStatusBadgeClass(value)}>{upper(value) || "-"}</span>
+           <span className={getStatusBadgeClass(value)}>{statusLabel(value)}</span>
           ),
         },
         {
@@ -2684,21 +2704,21 @@ const AdminEntityListPage = ({ entity }) => {
                     className="btn btn-sm btn-success"
                     onClick={() => handleApproveVet(record?._id)}
                   >
-                    Approve
+                    {label("Approve")}
                   </button>
                   <button
                     type="button"
                     className="btn btn-sm btn-danger"
                     onClick={() => handleRejectVet(record?._id)}
                   >
-                    Reject
+                    {label("Reject")}
                   </button>
                   <button
                     type="button"
                     className="btn btn-sm btn-outline-danger"
                     onClick={() => handleDeleteUser(record?._id)}
                   >
-                    Delete
+                    {label("Delete")}
                   </button>
                 </div>
               ) : (
@@ -2709,7 +2729,7 @@ const AdminEntityListPage = ({ entity }) => {
                       className="btn btn-sm btn-warning"
                       onClick={() => handleUpdateUserStatus(record?._id, "APPROVED")}
                     >
-                      Unblock
+                       {label("Unblock")}
                     </button>
                   ) : (
                     <button
@@ -2717,7 +2737,7 @@ const AdminEntityListPage = ({ entity }) => {
                       className="btn btn-sm btn-danger"
                       onClick={() => handleUpdateUserStatus(record?._id, "BLOCKED")}
                     >
-                      Block
+                       {label("Block")}
                     </button>
                   )}
                   <button
@@ -2725,7 +2745,7 @@ const AdminEntityListPage = ({ entity }) => {
                     className="btn btn-sm btn-outline-danger"
                     onClick={() => handleDeleteUser(record?._id)}
                   >
-                    Delete
+                     {label("Delete")}
                   </button>
                 </div>
               )}
@@ -2765,7 +2785,7 @@ const AdminEntityListPage = ({ entity }) => {
         {
           title: "Kind",
           key: "kind",
-          render: (_, record) => upper(record?.kind) || "-",
+          render: (_, record) => label(upper(record?.kind) || "-"),
         },
         {
           title: "Owner",
@@ -2781,7 +2801,7 @@ const AdminEntityListPage = ({ entity }) => {
           title: "Active",
           dataIndex: "isActive",
           render: (value) => (
-            <span className={getStatusBadgeClass(value ? "ACTIVE" : "BLOCKED")}>{value ? "ACTIVE" : "INACTIVE"}</span>
+            <span className={getStatusBadgeClass(value ? "ACTIVE" : "BLOCKED")}>{value ? label("ACTIVE") : label("INACTIVE")}</span>
           ),
         },
         {
@@ -2796,10 +2816,10 @@ const AdminEntityListPage = ({ entity }) => {
             <div className="text-end">
               <div className="d-inline-flex gap-2">
                 <button type="button" className="btn btn-sm btn-primary" onClick={() => openEditPetStore(record)}>
-                  Edit
+                   {label("Edit")}
                 </button>
                 <button type="button" className="btn btn-sm btn-danger" onClick={() => handleDeletePetStore(record?._id)}>
-                  Delete
+                   {label("Delete")}
                 </button>
               </div>
             </div>
@@ -2837,7 +2857,7 @@ const AdminEntityListPage = ({ entity }) => {
           title: "Active",
           dataIndex: "isActive",
           render: (value) => (
-            <span className={getStatusBadgeClass(value ? "ACTIVE" : "BLOCKED")}>{value ? "ACTIVE" : "INACTIVE"}</span>
+            <span className={getStatusBadgeClass(value ? "ACTIVE" : "BLOCKED")}>{value ? label("ACTIVE") : label("INACTIVE")}</span>
           ),
         },
         {
@@ -2852,10 +2872,10 @@ const AdminEntityListPage = ({ entity }) => {
             <div className="text-end">
               <div className="d-inline-flex gap-2">
                 <button type="button" className="btn btn-sm btn-primary" onClick={() => openEditProduct(record)}>
-                  Edit
+                   {label("Edit")}
                 </button>
                 <button type="button" className="btn btn-sm btn-danger" onClick={() => handleDeleteProduct(record?._id)}>
-                  Delete
+                   {label("Delete")}
                 </button>
               </div>
             </div>
@@ -2888,12 +2908,12 @@ const AdminEntityListPage = ({ entity }) => {
         {
           title: "Status",
           dataIndex: "status",
-          render: (value) => <span className={getStatusBadgeClass(value)}>{upper(value) || "-"}</span>,
+          render: (value) => <span className={getStatusBadgeClass(value)}>{statusLabel(value)}</span>,
         },
         {
           title: "Payment",
           dataIndex: "paymentStatus",
-          render: (value) => upper(value) || "-",
+          render: (value) => label(upper(value) || "-"),
         },
         {
           title: "Created",
@@ -2907,20 +2927,20 @@ const AdminEntityListPage = ({ entity }) => {
             <div className="text-end">
               <div className="d-inline-flex gap-2">
                 <button type="button" className="btn btn-sm btn-primary" onClick={() => openOrderDetails(record)}>
-                  View
+                  {label("View")}
                 </button>
                 <select
                   className="form-select form-select-sm"
                   value={upper(record?.status) || ""}
                   onChange={(e) => handleUpdateOrderStatus(record?._id, e.target.value)}
                 >
-                  <option value="PENDING">PENDING</option>
-                  <option value="CONFIRMED">CONFIRMED</option>
-                  <option value="PROCESSING">PROCESSING</option>
-                  <option value="SHIPPED">SHIPPED</option>
-                  <option value="DELIVERED">DELIVERED</option>
-                  <option value="CANCELLED">CANCELLED</option>
-                  <option value="REFUNDED">REFUNDED</option>
+                  <option value="PENDING">{label("PENDING")}</option>
+                  <option value="CONFIRMED">{label("CONFIRMED")}</option>
+                  <option value="PROCESSING">{label("PROCESSING")}</option>
+                  <option value="SHIPPED">{label("SHIPPED")}</option>
+                  <option value="DELIVERED">{label("DELIVERED")}</option>
+                  <option value="CANCELLED">{label("CANCELLED")}</option>
+                  <option value="REFUNDED">{label("REFUNDED")}</option>
                 </select>
               </div>
             </div>
@@ -2959,7 +2979,7 @@ const AdminEntityListPage = ({ entity }) => {
         {
           title: "Status",
           dataIndex: "status",
-          render: (value) => <span className={getStatusBadgeClass(value)}>{upper(value) || "-"}</span>,
+          render: (value) => <span className={getStatusBadgeClass(value)}>{statusLabel(value)}</span>,
         },
         {
           title: "Created",
@@ -2972,21 +2992,21 @@ const AdminEntityListPage = ({ entity }) => {
             <div className="text-end">
               <div className="d-inline-flex gap-2">
                 <button type="button" className="btn btn-sm btn-primary" onClick={() => openTransactionDetails(record)}>
-                  View
+                  {label("View")}
                 </button>
                 <select
                   className="form-select form-select-sm"
                   value={upper(record?.status) || ""}
                   onChange={(e) => handleUpdateTransactionStatus(record?._id, e.target.value)}
                 >
-                  <option value="PENDING">PENDING</option>
-                  <option value="SUCCESS">SUCCESS</option>
-                  <option value="FAILED">FAILED</option>
-                  <option value="REFUNDED">REFUNDED</option>
+                  <option value="PENDING">{label("PENDING")}</option>
+                  <option value="SUCCESS">{label("SUCCESS")}</option>
+                  <option value="FAILED">{label("FAILED")}</option>
+                  <option value="REFUNDED">{label("REFUNDED")}</option>
                 </select>
                 {entity === "payments" ? (
                   <button type="button" className="btn btn-sm btn-warning" onClick={() => handleRefundTransaction(record?._id)}>
-                    Refund
+                    {label("Refund")}
                   </button>
                 ) : null}
               </div>
@@ -3023,7 +3043,7 @@ const AdminEntityListPage = ({ entity }) => {
         {
           title: "Method",
           dataIndex: "paymentMethod",
-          render: (value) => upper(value) || "-",
+          render: (value) => label(upper(value) || "-"),
         },
         {
           title: "Stripe account",
@@ -3038,7 +3058,7 @@ const AdminEntityListPage = ({ entity }) => {
         {
           title: "Status",
           dataIndex: "status",
-          render: (value) => <span className={getStatusBadgeClass(value)}>{upper(value) || "-"}</span>,
+          render: (value) => <span className={getStatusBadgeClass(value)}>{statusLabel(value)}</span>,
         },
         {
           title: "Created",
@@ -3052,10 +3072,10 @@ const AdminEntityListPage = ({ entity }) => {
               {["PENDING", "FAILED"].includes(upper(record?.status)) ? (
                 <div className="d-inline-flex gap-2">
                   <button type="button" className="btn btn-sm btn-success" onClick={() => openApproveWithdrawal(record)}>
-                    {upper(record?.status) === "FAILED" ? "Retry payout" : "Approve"}
+                    {upper(record?.status) === "FAILED" ? label("Retry payout") : label("Approve")}
                   </button>
                   <button type="button" className="btn btn-sm btn-danger" onClick={() => openRejectWithdrawal(record)}>
-                    Reject
+                    {label("Reject")}
                   </button>
                 </div>
               ) : (
@@ -3073,7 +3093,7 @@ const AdminEntityListPage = ({ entity }) => {
       columns,
       addPath: cfg.addPath,
     };
-  }, [entity]);
+  }, [entity, label, statusLabel]);
 
   const tableColumns = useMemo(() => {
     const hasActions = columns.some(
@@ -3096,7 +3116,7 @@ const AdminEntityListPage = ({ entity }) => {
                 className="btn btn-sm btn-outline-primary"
                 onClick={() => openRecordDetails(record)}
               >
-                View
+                {label("View")}
               </button>
               {originalRender ? originalRender(value, record, rowIndex) : null}
             </div>
@@ -3115,6 +3135,7 @@ const AdminEntityListPage = ({ entity }) => {
 
       return {
         ...column,
+        title: typeof column.title === "string" ? label(column.title) : column.title,
         responsive,
         ellipsis: true,
       };
@@ -3124,21 +3145,21 @@ const AdminEntityListPage = ({ entity }) => {
       compactColumns.push({
         title: "",
         key: "actions",
-        width: 90,
+        width: 140,
         render: (_, record) => (
           <button
             type="button"
             className="btn btn-sm btn-outline-primary"
             onClick={() => openRecordDetails(record)}
           >
-            View
+            {label("View")}
           </button>
         ),
       });
     }
 
     return compactColumns;
-  }, [columns, entity]);
+  }, [columns, entity, label]);
 
   useEffect(() => {
     setIsResetting(true);
@@ -3322,6 +3343,7 @@ const AdminEntityListPage = ({ entity }) => {
     if (entity === "approvalsVets") return "Veterinarian Approvals";
     return title;
   }, [entity, title]);
+  const displayPageTitle = label(pageTitle);
 
   return (
     <>
@@ -3333,15 +3355,15 @@ const AdminEntityListPage = ({ entity }) => {
             <div className="row">
               <div className="col-sm-12">
                 <ul className="breadcrumb">
-                  <li className="breadcrumb-item">
-                    <Link to="#">{section || "Admin"} </Link>
+                   <li className="breadcrumb-item">
+                     <Link to="#">{label(section || "Admin")}</Link>
                   </li>
                   <li className="breadcrumb-item">
                     <i className="feather-chevron-right">
                       <FeatherIcon icon="chevron-right" />
                     </i>
                   </li>
-                  <li className="breadcrumb-item active">{title}</li>
+                   <li className="breadcrumb-item active">{displayPageTitle}</li>
                 </ul>
               </div>
             </div>
@@ -3355,7 +3377,7 @@ const AdminEntityListPage = ({ entity }) => {
                     <div className="row align-items-center">
                       <div className="col">
                         <div className="doctor-table-blk">
-                          <h3>{pageTitle}</h3>
+                           <h3>{displayPageTitle}</h3>
                           <div className="doctor-search-blk">
                             <div className="top-nav-search table-search-blk">
                               <form
@@ -3368,7 +3390,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <input
                                   type="text"
                                   className="form-control"
-                                  placeholder="Search here"
+                                  placeholder={label("Search here")}
                                   value={search}
                                   onChange={(e) => setSearch(e.target.value)}
                                 />
@@ -3389,18 +3411,18 @@ const AdminEntityListPage = ({ entity }) => {
                                 >
                                   {entity === "users" ? (
                                     <>
-                                      <option value="">All Roles</option>
-                                      <option value="ADMIN">ADMIN</option>
-                                      <option value="PET_OWNER">PET_OWNER</option>
-                                      <option value="VETERINARIAN">VETERINARIAN</option>
-                                      <option value="PET_STORE">PET_STORE</option>
-                                      <option value="PARAPHARMACY">PARAPHARMACY</option>
-                                      <option value="PET_SITTER">PET_SITTER</option>
+                                      <option value="">{label("All Roles")}</option>
+                                      <option value="ADMIN">{label("ADMIN")}</option>
+                                      <option value="PET_OWNER">{label("PET_OWNER")}</option>
+                                      <option value="VETERINARIAN">{label("VETERINARIAN")}</option>
+                                       <option value="PET_STORE">{label("PET_STORE")}</option>
+                                       <option value="PARAPHARMACY">{label("PARAPHARMACY")}</option>
+                                      <option value="PET_SITTER">{label("PET_SITTER")}</option>
                                     </>
                                   ) : (
                                     <>
-                                      <option value="PET_STORE">PET_STORE</option>
-                                      <option value="PARAPHARMACY">PARAPHARMACY</option>
+                                      <option value="PET_STORE">{label("PET_STORE")}</option>
+                                      <option value="PARAPHARMACY">{label("PARAPHARMACY")}</option>
                                     </>
                                   )}
                                 </select>
@@ -3417,9 +3439,9 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All</option>
-                                  <option value="PHARMACY">PHARMACY</option>
-                                  <option value="PARAPHARMACY">PARAPHARMACY</option>
+                                   <option value="">{label("All")}</option>
+                                   <option value="PHARMACY">{label("PHARMACY")}</option>
+                                   <option value="PARAPHARMACY">{label("PARAPHARMACY")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3428,7 +3450,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <input
                                   type="text"
                                   className="form-control"
-                                  placeholder="City"
+                                   placeholder={label("City")}
                                   value={petStoreCityFilter}
                                   onChange={(e) => {
                                     setPetStoreCityFilter(e.target.value);
@@ -3448,10 +3470,10 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">Active Only</option>
-                                  <option value="all">All</option>
-                                  <option value="true">Active</option>
-                                  <option value="false">Inactive</option>
+                                   <option value="">{label("Active Only")}</option>
+                                   <option value="all">{label("All")}</option>
+                                   <option value="true">{label("Active")}</option>
+                                   <option value="false">{label("Inactive")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3460,7 +3482,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <input
                                   type="text"
                                   className="form-control"
-                                  placeholder="Category"
+                                   placeholder={label("Category")}
                                   value={productCategoryFilter}
                                   onChange={(e) => {
                                     setProductCategoryFilter(e.target.value);
@@ -3479,10 +3501,10 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Sellers</option>
-                                  <option value="PET_STORE">PET_STORE</option>
-                                  <option value="PARAPHARMACY">PARAPHARMACY</option>
-                                  <option value="ADMIN">ADMIN</option>
+                                   <option value="">{label("All Sellers")}</option>
+                                  <option value="PET_STORE">{label("PET_STORE")}</option>
+                                  <option value="PARAPHARMACY">{label("PARAPHARMACY")}</option>
+                                  <option value="ADMIN">{label("ADMIN")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3496,12 +3518,12 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Pets</option>
-                                  <option value="DOG">DOG</option>
-                                  <option value="CAT">CAT</option>
-                                  <option value="BIRD">BIRD</option>
-                                  <option value="RABBIT">RABBIT</option>
-                                  <option value="OTHER">OTHER</option>
+                                   <option value="">{label("All Pets")}</option>
+                                  <option value="DOG">{label("DOG")}</option>
+                                  <option value="CAT">{label("CAT")}</option>
+                                  <option value="BIRD">{label("BIRD")}</option>
+                                  <option value="RABBIT">{label("RABBIT")}</option>
+                                  <option value="OTHER">{label("OTHER")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3516,14 +3538,14 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Status</option>
-                                  <option value="PENDING">PENDING</option>
-                                  <option value="CONFIRMED">CONFIRMED</option>
-                                  <option value="PROCESSING">PROCESSING</option>
-                                  <option value="SHIPPED">SHIPPED</option>
-                                  <option value="DELIVERED">DELIVERED</option>
-                                  <option value="CANCELLED">CANCELLED</option>
-                                  <option value="REFUNDED">REFUNDED</option>
+                                   <option value="">{label("All Status")}</option>
+                                  <option value="PENDING">{label("PENDING")}</option>
+                                  <option value="CONFIRMED">{label("CONFIRMED")}</option>
+                                  <option value="PROCESSING">{label("PROCESSING")}</option>
+                                  <option value="SHIPPED">{label("SHIPPED")}</option>
+                                  <option value="DELIVERED">{label("DELIVERED")}</option>
+                                  <option value="CANCELLED">{label("CANCELLED")}</option>
+                                  <option value="REFUNDED">{label("REFUNDED")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3537,11 +3559,11 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Payments</option>
-                                  <option value="UNPAID">UNPAID</option>
-                                  <option value="PARTIAL">PARTIAL</option>
-                                  <option value="PAID">PAID</option>
-                                  <option value="REFUNDED">REFUNDED</option>
+                                   <option value="">{label("All Payments")}</option>
+                                  <option value="UNPAID">{label("UNPAID")}</option>
+                                  <option value="PARTIAL">{label("PARTIAL")}</option>
+                                  <option value="PAID">{label("PAID")}</option>
+                                  <option value="REFUNDED">{label("REFUNDED")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3550,7 +3572,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <input
                                   type="text"
                                   className="form-control"
-                                  placeholder="PetStore ID"
+                                   placeholder={label("PetStore ID")}
                                   value={orderPetStoreIdFilter}
                                   onChange={(e) => {
                                     setOrderPetStoreIdFilter(e.target.value);
@@ -3564,7 +3586,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <input
                                   type="text"
                                   className="form-control"
-                                  placeholder="PetOwner ID"
+                                   placeholder={label("PetOwner ID")}
                                   value={orderPetOwnerIdFilter}
                                   onChange={(e) => {
                                     setOrderPetOwnerIdFilter(e.target.value);
@@ -3584,11 +3606,11 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Status</option>
-                                  <option value="PENDING">PENDING</option>
-                                  <option value="SUCCESS">SUCCESS</option>
-                                  <option value="FAILED">FAILED</option>
-                                  <option value="REFUNDED">REFUNDED</option>
+                                  <option value="">{label("All Status")}</option>
+                                  <option value="PENDING">{label("PENDING")}</option>
+                                  <option value="SUCCESS">{label("SUCCESS")}</option>
+                                  <option value="FAILED">{label("FAILED")}</option>
+                                  <option value="REFUNDED">{label("REFUNDED")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3597,7 +3619,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <input
                                   type="text"
                                   className="form-control"
-                                  placeholder="Provider"
+                                   placeholder={label("Provider")}
                                   value={transactionProviderFilter}
                                   onChange={(e) => {
                                     setTransactionProviderFilter(e.target.value);
@@ -3616,11 +3638,11 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Types</option>
-                                  <option value="APPOINTMENT">APPOINTMENT</option>
-                                  <option value="SUBSCRIPTION">SUBSCRIPTION</option>
-                                  <option value="PRODUCT">PRODUCT</option>
-                                  <option value="ORDER">ORDER</option>
+                                   <option value="">{label("All Types")}</option>
+                                  <option value="APPOINTMENT">{label("APPOINTMENT")}</option>
+                                  <option value="SUBSCRIPTION">{label("SUBSCRIPTION")}</option>
+                                  <option value="PRODUCT">{label("PRODUCT")}</option>
+                                  <option value="ORDER">{label("ORDER")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3661,13 +3683,13 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All</option>
-                                  <option value="PENDING">PENDING</option>
-                                  <option value="PROCESSING">PROCESSING</option>
-                                  <option value="APPROVED">APPROVED</option>
-                                  <option value="FAILED">FAILED</option>
-                                  <option value="REJECTED">REJECTED</option>
-                                  <option value="COMPLETED">COMPLETED</option>
+                                   <option value="">{label("All")}</option>
+                                  <option value="PENDING">{label("PENDING")}</option>
+                                  <option value="PROCESSING">{label("PROCESSING")}</option>
+                                  <option value="APPROVED">{label("APPROVED")}</option>
+                                  <option value="FAILED">{label("FAILED")}</option>
+                                  <option value="REJECTED">{label("REJECTED")}</option>
+                                  <option value="COMPLETED">{label("COMPLETED")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3682,9 +3704,9 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Types</option>
-                                  <option value="VETERINARIAN">VETERINARIAN</option>
-                                  <option value="PET_STORE">PET_STORE</option>
+                                   <option value="">{label("All Types")}</option>
+                                  <option value="VETERINARIAN">{label("VETERINARIAN")}</option>
+                                  <option value="PET_STORE">{label("PET_STORE")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3698,9 +3720,9 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Status</option>
-                                  <option value="ACTIVE">ACTIVE</option>
-                                  <option value="INACTIVE">INACTIVE</option>
+                                   <option value="">{label("All Status")}</option>
+                                  <option value="ACTIVE">{label("ACTIVE")}</option>
+                                  <option value="INACTIVE">{label("INACTIVE")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3715,9 +3737,9 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All</option>
-                                  <option value="true">Active</option>
-                                  <option value="false">Inactive</option>
+                                   <option value="">{label("All")}</option>
+                                   <option value="true">{label("Active")}</option>
+                                   <option value="false">{label("Inactive")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3732,10 +3754,10 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Priority</option>
-                                  <option value="NORMAL">NORMAL</option>
-                                  <option value="IMPORTANT">IMPORTANT</option>
-                                  <option value="URGENT">URGENT</option>
+                                   <option value="">{label("All Priority")}</option>
+                                  <option value="NORMAL">{label("NORMAL")}</option>
+                                  <option value="IMPORTANT">{label("IMPORTANT")}</option>
+                                  <option value="URGENT">{label("URGENT")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3749,9 +3771,9 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Types</option>
-                                  <option value="BROADCAST">BROADCAST</option>
-                                  <option value="TARGETED">TARGETED</option>
+                                   <option value="">{label("All Types")}</option>
+                                  <option value="BROADCAST">{label("BROADCAST")}</option>
+                                  <option value="TARGETED">{label("TARGETED")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3765,9 +3787,9 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">Pinned?</option>
-                                  <option value="true">Pinned</option>
-                                  <option value="false">Not Pinned</option>
+                                   <option value="">{label("Pinned?")}</option>
+                                   <option value="true">{label("Pinned")}</option>
+                                   <option value="false">{label("Not Pinned")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3781,9 +3803,9 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All</option>
-                                  <option value="true">Active</option>
-                                  <option value="false">Inactive</option>
+                                   <option value="">{label("All")}</option>
+                                   <option value="true">{label("Active")}</option>
+                                   <option value="false">{label("Inactive")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3797,15 +3819,15 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Status</option>
-                                  <option value="PENDING">PENDING</option>
-                                  <option value="CONFIRMED">CONFIRMED</option>
-                                  <option value="CANCELLED">CANCELLED</option>
-                                  <option value="COMPLETED">COMPLETED</option>
-                                  <option value="NO_SHOW">NO_SHOW</option>
-                                  <option value="REJECTED">REJECTED</option>
-                                  <option value="RESCHEDULED">RESCHEDULED</option>
-                                  <option value="PENDING_PAYMENT">PENDING_PAYMENT</option>
+                                   <option value="">{label("All Status")}</option>
+                                  <option value="PENDING">{label("PENDING")}</option>
+                                  <option value="CONFIRMED">{label("CONFIRMED")}</option>
+                                  <option value="CANCELLED">{label("CANCELLED")}</option>
+                                  <option value="COMPLETED">{label("COMPLETED")}</option>
+                                  <option value="NO_SHOW">{label("NO_SHOW")}</option>
+                                  <option value="REJECTED">{label("REJECTED")}</option>
+                                  <option value="RESCHEDULED">{label("RESCHEDULED")}</option>
+                                  <option value="PENDING_PAYMENT">{label("PENDING_PAYMENT")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3819,10 +3841,10 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Payments</option>
-                                  <option value="UNPAID">UNPAID</option>
-                                  <option value="PAID">PAID</option>
-                                  <option value="REFUNDED">REFUNDED</option>
+                                   <option value="">{label("All Payments")}</option>
+                                  <option value="UNPAID">{label("UNPAID")}</option>
+                                  <option value="PAID">{label("PAID")}</option>
+                                  <option value="REFUNDED">{label("REFUNDED")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3857,7 +3879,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <input
                                   type="text"
                                   className="form-control"
-                                  placeholder="Veterinarian ID"
+                                   placeholder={label("Veterinarian ID")}
                                   value={reviewVeterinarianIdFilter}
                                   onChange={(e) => {
                                     setReviewVeterinarianIdFilter(e.target.value);
@@ -3871,7 +3893,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <input
                                   type="text"
                                   className="form-control"
-                                  placeholder="Pet Owner ID"
+                                   placeholder={label("Pet Owner ID")}
                                   value={reviewPetOwnerIdFilter}
                                   onChange={(e) => {
                                     setReviewPetOwnerIdFilter(e.target.value);
@@ -3890,7 +3912,7 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Ratings</option>
+                                   <option value="">{label("All Ratings")}</option>
                                   <option value="1">1</option>
                                   <option value="2">2</option>
                                   <option value="3">3</option>
@@ -3910,12 +3932,12 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Species</option>
-                                  <option value="DOG">DOG</option>
-                                  <option value="CAT">CAT</option>
-                                  <option value="BIRD">BIRD</option>
-                                  <option value="RABBIT">RABBIT</option>
-                                  <option value="OTHER">OTHER</option>
+                                   <option value="">{label("All Species")}</option>
+                                  <option value="DOG">{label("DOG")}</option>
+                                  <option value="CAT">{label("CAT")}</option>
+                                  <option value="BIRD">{label("BIRD")}</option>
+                                  <option value="RABBIT">{label("RABBIT")}</option>
+                                  <option value="OTHER">{label("OTHER")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3930,9 +3952,9 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All</option>
-                                  <option value="true">Active</option>
-                                  <option value="false">Inactive</option>
+                                   <option value="">{label("All")}</option>
+                                   <option value="true">{label("Active")}</option>
+                                   <option value="false">{label("Inactive")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3947,12 +3969,12 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Types</option>
-                                  <option value="LAB_REPORT">LAB_REPORT</option>
-                                  <option value="PRESCRIPTION">PRESCRIPTION</option>
-                                  <option value="XRAY">XRAY</option>
-                                  <option value="VACCINATION">VACCINATION</option>
-                                  <option value="OTHER">OTHER</option>
+                                  <option value="">{label("All Types")}</option>
+                                  <option value="LAB_REPORT">{label("LAB_REPORT")}</option>
+                                  <option value="PRESCRIPTION">{label("PRESCRIPTION")}</option>
+                                  <option value="XRAY">{label("XRAY")}</option>
+                                  <option value="VACCINATION">{label("VACCINATION")}</option>
+                                  <option value="OTHER">{label("OTHER")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3967,8 +3989,8 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">Active Only</option>
-                                  <option value="true">Include Inactive</option>
+                                   <option value="">{label("Active Only")}</option>
+                                   <option value="true">{label("Include Inactive")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -3982,11 +4004,11 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Status</option>
-                                  <option value="PENDING">PENDING</option>
-                                  <option value="APPROVED">APPROVED</option>
-                                  <option value="REJECTED">REJECTED</option>
-                                  <option value="BLOCKED">BLOCKED</option>
+                                   <option value="">{label("All Status")}</option>
+                                  <option value="PENDING">{label("PENDING")}</option>
+                                  <option value="APPROVED">{label("APPROVED")}</option>
+                                  <option value="REJECTED">{label("REJECTED")}</option>
+                                  <option value="BLOCKED">{label("BLOCKED")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -4000,10 +4022,10 @@ const AdminEntityListPage = ({ entity }) => {
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                   }}
                                 >
-                                  <option value="">All Subscriptions</option>
-                                  <option value="ACTIVE">ACTIVE</option>
-                                  <option value="EXPIRED">EXPIRED</option>
-                                  <option value="NONE">NONE</option>
+                                  <option value="">{label("All Subscriptions")}</option>
+                                  <option value="ACTIVE">{label("ACTIVE")}</option>
+                                  <option value="EXPIRED">{label("EXPIRED")}</option>
+                                  <option value="NONE">{label("NONE")}</option>
                                 </select>
                               </div>
                             ) : null}
@@ -4012,7 +4034,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <button
                                   type="button"
                                   className="btn btn-primary add-pluss ms-2"
-                                  title="Add Vaccine"
+                                  title={label("Add Vaccine")}
                                   onClick={openAddVaccine}
                                 >
                                   <img src={plusicon} alt="#" />
@@ -4022,7 +4044,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <button
                                   type="button"
                                   className="btn btn-primary add-pluss ms-2"
-                                  title="Add Pet Store"
+                                  title={label("Add Pet Store")}
                                   onClick={openAddPetStore}
                                 >
                                   <img src={plusicon} alt="#" />
@@ -4032,7 +4054,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <button
                                   type="button"
                                   className="btn btn-primary add-pluss ms-2"
-                                  title="Add Product"
+                                  title={label("Add Product")}
                                   onClick={openAddProduct}
                                 >
                                   <img src={plusicon} alt="#" />
@@ -4042,7 +4064,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <button
                                   type="button"
                                   className="btn btn-primary add-pluss ms-2"
-                                  title="Add Specialization"
+                                  title={label("Add Specialization")}
                                   onClick={openAddSpecialization}
                                 >
                                   <img src={plusicon} alt="#" />
@@ -4052,7 +4074,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <button
                                   type="button"
                                   className="btn btn-primary add-pluss ms-2"
-                                  title="Add Insurance"
+                                  title={label("Add Insurance")}
                                   onClick={openAddInsurance}
                                 >
                                   <img src={plusicon} alt="#" />
@@ -4062,7 +4084,7 @@ const AdminEntityListPage = ({ entity }) => {
                                 <button
                                   type="button"
                                   className="btn btn-primary add-pluss ms-2"
-                                  title="Add Announcement"
+                                  title={label("Add Announcement")}
                                   onClick={openAddAnnouncement}
                                 >
                                   <img src={plusicon} alt="#" />
@@ -4083,7 +4105,7 @@ const AdminEntityListPage = ({ entity }) => {
                                   onClick={handleClearFilters}
                                   disabled={loading}
                                 >
-                                  Clear
+                                   {label("Clear")}
                                 </button>
                               ) : null}
                               <Link
@@ -4117,7 +4139,7 @@ const AdminEntityListPage = ({ entity }) => {
                         pageSize: pagination.limit,
                         total: pagination.total,
                         showTotal: (total, range) =>
-                          `Showing ${range[0]} to ${range[1]} of ${total} entries`,
+                           `${label("Showing")} ${range[0]} ${label("to")} ${range[1]} ${label("of")} ${total} ${label("entries")}`,
                         onShowSizeChange: onShowSizeChange,
                         itemRender: itemRender,
                         onChange: (page, pageSize) => {
@@ -4144,7 +4166,7 @@ const AdminEntityListPage = ({ entity }) => {
 
       <Modal
         open={recordDetailsOpen}
-        title={`${pageTitle} details`}
+        title={`${displayPageTitle} ${label("details")}`}
         width={820}
         onCancel={() => {
           setRecordDetailsOpen(false);
@@ -4159,7 +4181,7 @@ const AdminEntityListPage = ({ entity }) => {
               setRecordDetails(null);
             }}
           >
-            Close
+             {label("Close")}
           </button>
         }
         destroyOnClose
@@ -4172,7 +4194,7 @@ const AdminEntityListPage = ({ entity }) => {
                 className={`admin-detail-item ${typeof value === "object" ? "admin-detail-item--wide" : ""}`}
                 key={key}
               >
-                <span className="admin-detail-label">{formatDetailLabel(key)}</span>
+                <span className="admin-detail-label">{label(formatDetailLabel(key))}</span>
                 <div className="admin-detail-value">
                   {/(At|Date)$/.test(key) && typeof value === "string"
                     ? formatDate(value)
@@ -4185,7 +4207,7 @@ const AdminEntityListPage = ({ entity }) => {
 
       <Modal
         open={veterinarianReviewOpen}
-        title="Veterinarian application review"
+         title={label("Veterinarian application review")}
         width={900}
         onCancel={() => {
           setVeterinarianReviewOpen(false);
@@ -4201,7 +4223,7 @@ const AdminEntityListPage = ({ entity }) => {
                 setVeterinarianReview(null);
               }}
             >
-              Close
+               {label("Close")}
             </button>
             {entity === "approvalsVets" ? (
               <>
@@ -4211,7 +4233,7 @@ const AdminEntityListPage = ({ entity }) => {
                   disabled={loading}
                   onClick={() => handleRejectVet(veterinarianReview?._id)}
                 >
-                  Reject
+                   {label("Reject")}
                 </button>
                 <button
                   type="button"
@@ -4219,7 +4241,7 @@ const AdminEntityListPage = ({ entity }) => {
                   disabled={loading}
                   onClick={() => handleApproveVet(veterinarianReview?._id)}
                 >
-                  Approve
+                   {label("Approve")}
                 </button>
               </>
             ) : null}
@@ -4229,40 +4251,40 @@ const AdminEntityListPage = ({ entity }) => {
       >
         <div className="admin-detail-grid">
           <div className="admin-detail-item">
-            <span className="admin-detail-label">Veterinarian</span>
+             <span className="admin-detail-label">{label("Veterinarian")}</span>
             <div className="admin-detail-value">{veterinarianReview?.name || veterinarianReview?.fullName || "-"}</div>
           </div>
           <div className="admin-detail-item">
-            <span className="admin-detail-label">Status</span>
+             <span className="admin-detail-label">{label("Status")}</span>
             <div className="admin-detail-value">
               <span className={getStatusBadgeClass(veterinarianReview?.status)}>
-                {upper(veterinarianReview?.status) || "-"}
+                 {statusLabel(veterinarianReview?.status)}
               </span>
             </div>
           </div>
           <div className="admin-detail-item">
-            <span className="admin-detail-label">Email</span>
+             <span className="admin-detail-label">{label("Email")}</span>
             <div className="admin-detail-value">{veterinarianReview?.email || "-"}</div>
           </div>
           <div className="admin-detail-item">
-            <span className="admin-detail-label">Phone</span>
+             <span className="admin-detail-label">{label("Phone")}</span>
             <div className="admin-detail-value">{veterinarianReview?.phone || "-"}</div>
           </div>
           <div className="admin-detail-item">
-            <span className="admin-detail-label">Licence number</span>
+             <span className="admin-detail-label">{label("Licence number")}</span>
             <div className="admin-detail-value">{veterinarianReview?.veterinarianProfile?.licenseNumber || "-"}</div>
           </div>
           <div className="admin-detail-item">
-            <span className="admin-detail-label">Experience</span>
+             <span className="admin-detail-label">{label("Experience")}</span>
             <div className="admin-detail-value">
               {veterinarianReview?.veterinarianProfile?.experienceYears !== null &&
               veterinarianReview?.veterinarianProfile?.experienceYears !== undefined
-                ? `${veterinarianReview.veterinarianProfile.experienceYears} years`
+                 ? `${veterinarianReview.veterinarianProfile.experienceYears} ${label("years")}`
                 : "-"}
             </div>
           </div>
           <div className="admin-detail-item admin-detail-item--wide">
-            <span className="admin-detail-label">Purchased subscription</span>
+             <span className="admin-detail-label">{label("Purchased subscription")}</span>
             <div className="admin-detail-value">
               {veterinarianReview?.subscription?.plan?.name ? (
                 <>
@@ -4279,12 +4301,12 @@ const AdminEntityListPage = ({ entity }) => {
                     : ""}
                 </>
               ) : (
-                <span>No active subscription.</span>
+                 <span>{label("No active subscription.")}</span>
               )}
             </div>
           </div>
           <div className="admin-detail-item admin-detail-item--wide">
-            <span className="admin-detail-label">Specializations</span>
+             <span className="admin-detail-label">{label("Specializations")}</span>
             <div className="admin-detail-value">
               {getSpecializationNames(veterinarianReview?.veterinarianProfile).length
                 ? getSpecializationNames(veterinarianReview?.veterinarianProfile).join(", ")
@@ -4292,7 +4314,7 @@ const AdminEntityListPage = ({ entity }) => {
             </div>
           </div>
           <div className="admin-detail-item admin-detail-item--wide">
-            <span className="admin-detail-label">Registration documents</span>
+             <span className="admin-detail-label">{label("Registration documents")}</span>
             <div className="admin-detail-value">
               {veterinarianDocuments.length ? (
                 <div className="admin-document-list">
@@ -4326,14 +4348,14 @@ const AdminEntityListPage = ({ entity }) => {
                           target="_blank"
                           rel="noreferrer"
                         >
-                          Open
+                           {label("Open")}
                         </a>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <span>No registration documents have been uploaded.</span>
+                 <span>{label("No registration documents have been uploaded.")}</span>
               )}
             </div>
           </div>
@@ -4342,13 +4364,13 @@ const AdminEntityListPage = ({ entity }) => {
 
       <Modal
         open={productModalOpen}
-        title={productEditing?._id ? "Edit Product" : "Add Product"}
+        title={label(productEditing?._id ? "Edit Product" : "Add Product")}
         onCancel={() => {
           setProductModalOpen(false);
           setProductEditing(null);
         }}
         onOk={handleSaveProduct}
-        okText={productEditing?._id ? "Save" : "Create"}
+        okText={label(productEditing?._id ? "Save" : "Create")}
         confirmLoading={productSaving}
         destroyOnClose
       >
@@ -4371,64 +4393,64 @@ const AdminEntityListPage = ({ entity }) => {
             images: [],
           }}
         >
-          <Form.Item label="Name" name="name" rules={[{ required: true, message: "Name is required" }]}>
+          <Form.Item label={label("Name")} name="name" rules={[{ required: true, message: label("Name is required") }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item label="Description" name="description">
+          <Form.Item label={label("Description")} name="description">
             <Input.TextArea rows={3} />
           </Form.Item>
 
-          <Form.Item label="SKU" name="sku">
+          <Form.Item label={label("SKU")} name="sku">
             <Input />
           </Form.Item>
 
-          <Form.Item label="Price" name="price" rules={[{ required: true, message: "Price is required" }]}>
+          <Form.Item label={label("Price")} name="price" rules={[{ required: true, message: label("Price is required") }]}>
             <InputNumber min={0} className="w-100" />
           </Form.Item>
 
-          <Form.Item label="Discount Price" name="discountPrice">
+          <Form.Item label={label("Discount Price")} name="discountPrice">
             <InputNumber min={0} className="w-100" />
           </Form.Item>
 
-          <Form.Item label="Stock" name="stock">
+          <Form.Item label={label("Stock")} name="stock">
             <InputNumber min={0} className="w-100" />
           </Form.Item>
 
-          <Form.Item label="Category" name="category">
+          <Form.Item label={label("Category")} name="category">
             <Input />
           </Form.Item>
 
-          <Form.Item label="Sub Category" name="subCategory">
+          <Form.Item label={label("Sub Category")} name="subCategory">
             <Input />
           </Form.Item>
 
-          <Form.Item label="Pet Types" name="petType">
+          <Form.Item label={label("Pet Types")} name="petType">
             <Select
               mode="multiple"
               options={[
-                { value: "DOG", label: "DOG" },
-                { value: "CAT", label: "CAT" },
-                { value: "BIRD", label: "BIRD" },
-                { value: "RABBIT", label: "RABBIT" },
-                { value: "OTHER", label: "OTHER" },
+                { value: "DOG", label: label("DOG") },
+                { value: "CAT", label: label("CAT") },
+                { value: "BIRD", label: label("BIRD") },
+                { value: "RABBIT", label: label("RABBIT") },
+                { value: "OTHER", label: label("OTHER") },
               ]}
             />
           </Form.Item>
 
-          <Form.Item label="Tags (comma separated)" name="tags">
+          <Form.Item label={label("Tags (comma separated)")} name="tags">
             <Input />
           </Form.Item>
 
-          <Form.Item label="Requires Prescription" name="requiresPrescription" valuePropName="checked">
+          <Form.Item label={label("Requires Prescription")} name="requiresPrescription" valuePropName="checked">
             <Switch />
           </Form.Item>
 
-          <Form.Item label="Active" name="isActive" valuePropName="checked">
+          <Form.Item label={label("Active")} name="isActive" valuePropName="checked">
             <Switch />
           </Form.Item>
 
-          <Form.Item label="Images" name="images">
+          <Form.Item label={label("Images")} name="images">
             <Input.TextArea rows={2} readOnly value={(productForm.getFieldValue("images") || []).join("\n")} />
           </Form.Item>
 
@@ -4457,7 +4479,7 @@ const AdminEntityListPage = ({ entity }) => {
               onClick={() => productImagesPickerRef.current?.click()}
               disabled={uploading}
             >
-              {uploading ? "Uploading..." : "Pick & Upload"}
+              {uploading ? label("Uploading...") : label("Pick & Upload")}
             </button>
           </div>
         </Form>
@@ -4465,13 +4487,13 @@ const AdminEntityListPage = ({ entity }) => {
 
       <Modal
         open={petStoreModalOpen}
-        title={petStoreEditing?._id ? "Edit Pet Store" : "Add Pet Store"}
+        title={label(petStoreEditing?._id ? "Edit Pet Store" : "Add Pet Store")}
         onCancel={() => {
           setPetStoreModalOpen(false);
           setPetStoreEditing(null);
         }}
         onOk={handleSavePetStore}
-        okText={petStoreEditing?._id ? "Save" : "Create"}
+        okText={label(petStoreEditing?._id ? "Save" : "Create")}
         confirmLoading={petStoreSaving}
         destroyOnClose
       >
@@ -4491,14 +4513,14 @@ const AdminEntityListPage = ({ entity }) => {
             isActive: true,
           }}
         >
-          <Form.Item label="Owner ID" name="ownerId" rules={[{ required: !petStoreEditing?._id, message: "Owner ID is required" }]}>
+          <Form.Item label={label("Owner ID")} name="ownerId" rules={[{ required: !petStoreEditing?._id, message: label("Owner ID is required") }]}>
             <Input />
           </Form.Item>
-          <Form.Item label="Name" name="name" rules={[{ required: true, message: "Name is required" }]}>
+          <Form.Item label={label("Name")} name="name" rules={[{ required: true, message: label("Name is required") }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item label="Logo" name="logo">
+          <Form.Item label={label("Logo")} name="logo">
             <Input readOnly />
           </Form.Item>
 
@@ -4525,31 +4547,31 @@ const AdminEntityListPage = ({ entity }) => {
               onClick={() => petStoreLogoPickerRef.current?.click()}
               disabled={uploading}
             >
-              {uploading ? "Uploading..." : "Pick & Upload Logo"}
+              {uploading ? label("Uploading...") : label("Pick & Upload Logo")}
             </button>
           </div>
 
-          <Form.Item label="Phone" name="phone">
+          <Form.Item label={label("Phone")} name="phone">
             <Input />
           </Form.Item>
 
-          <Form.Item label="Address Line 1" name="addressLine1">
+          <Form.Item label={label("Address Line 1")} name="addressLine1">
             <Input />
           </Form.Item>
-          <Form.Item label="City" name="addressCity">
+          <Form.Item label={label("City")} name="addressCity">
             <Input />
           </Form.Item>
-          <Form.Item label="State" name="addressState">
+          <Form.Item label={label("State")} name="addressState">
             <Input />
           </Form.Item>
-          <Form.Item label="Country" name="addressCountry">
+          <Form.Item label={label("Country")} name="addressCountry">
             <Input />
           </Form.Item>
-          <Form.Item label="Zip" name="addressZip">
+          <Form.Item label={label("Zip")} name="addressZip">
             <Input />
           </Form.Item>
 
-          <Form.Item label="Active" name="isActive" valuePropName="checked">
+          <Form.Item label={label("Active")} name="isActive" valuePropName="checked">
             <Switch />
           </Form.Item>
         </Form>
@@ -4557,7 +4579,7 @@ const AdminEntityListPage = ({ entity }) => {
 
       <Modal
         open={orderDetailsOpen}
-        title="Order Details"
+        title={label("Order Details")}
         onCancel={() => {
           setOrderDetailsOpen(false);
           setOrderDetails(null);
@@ -4566,35 +4588,35 @@ const AdminEntityListPage = ({ entity }) => {
         destroyOnClose
       >
         {orderDetailsLoading ? (
-          <div>Loading...</div>
+          <div>{label("Loading...")}</div>
         ) : orderDetails ? (
           <div>
-            <div className="mb-2"><strong>ID:</strong> {orderDetails?._id}</div>
-            <div className="mb-2"><strong>Order #:</strong> {orderDetails?.orderNumber || "-"}</div>
-            <div className="mb-2"><strong>Status:</strong> {upper(orderDetails?.status) || "-"}</div>
-            <div className="mb-2"><strong>Payment:</strong> {upper(orderDetails?.paymentStatus) || "-"}</div>
-            <div className="mb-2"><strong>Total:</strong> {orderDetails?.total}</div>
-            <div className="mb-2"><strong>Created:</strong> {formatDate(orderDetails?.createdAt)}</div>
+            <div className="mb-2"><strong>{label("ID")}:</strong> {orderDetails?._id}</div>
+            <div className="mb-2"><strong>{label("Order #")}:</strong> {orderDetails?.orderNumber || "-"}</div>
+            <div className="mb-2"><strong>{label("Status")}:</strong> {statusLabel(orderDetails?.status)}</div>
+            <div className="mb-2"><strong>{label("Payment")}:</strong> {statusLabel(orderDetails?.paymentStatus)}</div>
+            <div className="mb-2"><strong>{label("Total")}:</strong> {orderDetails?.total}</div>
+            <div className="mb-2"><strong>{label("Created")}:</strong> {formatDate(orderDetails?.createdAt)}</div>
             <div className="border rounded p-3 mb-3 bg-light">
-              <div className="fw-bold mb-2">Delivery Commitment &amp; Monitoring</div>
-              <div className="mb-1"><strong>Order requested:</strong> {formatDate(orderDetails?.requestedAt || orderDetails?.createdAt) || "-"}</div>
-              <div className="mb-1"><strong>Pharmacy processed:</strong> {formatDate(orderDetails?.pharmacyAcceptedAt) || "-"}</div>
-              <div className="mb-1"><strong>Shipping fee added:</strong> {formatDate(orderDetails?.shippingFeeAddedAt || orderDetails?.shippingUpdatedAt) || "-"}</div>
-              <div className="mb-1"><strong>Customer paid:</strong> {formatDate(orderDetails?.customerPaidAt) || "-"}</div>
-              <div className="mb-1"><strong>Promised delivery:</strong> {orderDetails?.promisedDeliveryDays ? `${orderDetails.promisedDeliveryDays} Days` : "Not set"}</div>
-              <div className="mb-1"><strong>Expected delivery date:</strong> {formatDate(orderDetails?.expectedDeliveryDate) || "-"}</div>
-              <div className="mb-1"><strong>Actual delivered:</strong> {formatDate(orderDetails?.actualDeliveredAt || orderDetails?.deliveredAt) || "-"}</div>
-              <div className="mb-1"><strong>Total actual delivery days:</strong> {orderDetails?.totalActualDeliveryDays ?? "-"}</div>
-              <div className="mb-0"><strong>Delivery status:</strong> {upper(orderDetails?.deliveryStatus || "AWAITING_DELIVERY").replace(/_/g, " ")}{orderDetails?.daysLate ? ` (${orderDetails.daysLate} day${Number(orderDetails.daysLate) === 1 ? "" : "s"} late)` : ""}</div>
+              <div className="fw-bold mb-2">{label("Delivery Commitment & Monitoring")}</div>
+              <div className="mb-1"><strong>{label("Order requested")}:</strong> {formatDate(orderDetails?.requestedAt || orderDetails?.createdAt) || "-"}</div>
+              <div className="mb-1"><strong>{label("Pharmacy processed")}:</strong> {formatDate(orderDetails?.pharmacyAcceptedAt) || "-"}</div>
+              <div className="mb-1"><strong>{label("Shipping fee added")}:</strong> {formatDate(orderDetails?.shippingFeeAddedAt || orderDetails?.shippingUpdatedAt) || "-"}</div>
+              <div className="mb-1"><strong>{label("Customer paid")}:</strong> {formatDate(orderDetails?.customerPaidAt) || "-"}</div>
+              <div className="mb-1"><strong>{label("Promised delivery")}:</strong> {orderDetails?.promisedDeliveryDays ? `${orderDetails.promisedDeliveryDays} ${label("Days")}` : label("Not set")}</div>
+              <div className="mb-1"><strong>{label("Expected delivery date")}:</strong> {formatDate(orderDetails?.expectedDeliveryDate) || "-"}</div>
+              <div className="mb-1"><strong>{label("Actual delivered")}:</strong> {formatDate(orderDetails?.actualDeliveredAt || orderDetails?.deliveredAt) || "-"}</div>
+              <div className="mb-1"><strong>{label("Total actual delivery days")}:</strong> {orderDetails?.totalActualDeliveryDays ?? "-"}</div>
+              <div className="mb-0"><strong>{label("Delivery status")}:</strong> {statusLabel(orderDetails?.deliveryStatus || "AWAITING_DELIVERY")}{orderDetails?.daysLate ? ` (${orderDetails.daysLate} ${label(Number(orderDetails.daysLate) === 1 ? "day" : "days")} ${label("late")})` : ""}</div>
             </div>
-            <div className="mb-2"><strong>Items:</strong></div>
+            <div className="mb-2"><strong>{label("Items")}:</strong></div>
             <div className="table-responsive">
               <table className="table table-sm">
                 <thead>
                   <tr>
-                    <th>Product</th>
-                    <th>Qty</th>
-                    <th>Total</th>
+                    <th>{label("Product")}</th>
+                    <th>{label("Qty")}</th>
+                    <th>{label("Total")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -4610,13 +4632,13 @@ const AdminEntityListPage = ({ entity }) => {
             </div>
           </div>
         ) : (
-          <div>No details</div>
+          <div>{label("No details")}</div>
         )}
       </Modal>
 
       <Modal
         open={transactionDetailsOpen}
-        title="Transaction Details"
+        title={label("Transaction Details")}
         onCancel={() => {
           setTransactionDetailsOpen(false);
           setTransactionDetails(null);
@@ -4625,40 +4647,40 @@ const AdminEntityListPage = ({ entity }) => {
         destroyOnClose
       >
         {transactionDetailsLoading ? (
-          <div>Loading...</div>
+          <div>{label("Loading...")}</div>
         ) : transactionDetails ? (
           <div>
-            <div className="mb-2"><strong>ID:</strong> {transactionDetails?._id}</div>
-            <div className="mb-2"><strong>User:</strong> {transactionDetails?.userId?.fullName || transactionDetails?.userId?.name || transactionDetails?.userId?.email || ""}</div>
-            <div className="mb-2"><strong>Amount:</strong> {transactionDetails?.amount} {transactionDetails?.currency}</div>
-            <div className="mb-2"><strong>Status:</strong> {upper(transactionDetails?.status) || "-"}</div>
-            <div className="mb-2"><strong>Provider:</strong> {transactionDetails?.provider || "-"}</div>
-            <div className="mb-2"><strong>Ref:</strong> {transactionDetails?.providerReference || "-"}</div>
-            <div className="mb-2"><strong>Created:</strong> {formatDate(transactionDetails?.createdAt)}</div>
+            <div className="mb-2"><strong>{label("ID")}:</strong> {transactionDetails?._id}</div>
+            <div className="mb-2"><strong>{label("User")}:</strong> {transactionDetails?.userId?.fullName || transactionDetails?.userId?.name || transactionDetails?.userId?.email || ""}</div>
+            <div className="mb-2"><strong>{label("Amount")}:</strong> {transactionDetails?.amount} {transactionDetails?.currency}</div>
+            <div className="mb-2"><strong>{label("Status")}:</strong> {statusLabel(transactionDetails?.status)}</div>
+            <div className="mb-2"><strong>{label("Provider")}:</strong> {transactionDetails?.provider || "-"}</div>
+            <div className="mb-2"><strong>{label("Ref")}:</strong> {transactionDetails?.providerReference || "-"}</div>
+            <div className="mb-2"><strong>{label("Created")}:</strong> {formatDate(transactionDetails?.createdAt)}</div>
           </div>
         ) : (
-          <div>No details</div>
+          <div>{label("No details")}</div>
         )}
       </Modal>
 
       <Modal
         open={withdrawalApproveOpen}
-        title="Approve Withdrawal"
+        title={label("Approve Withdrawal")}
         onCancel={() => {
           setWithdrawalApproveOpen(false);
           setWithdrawalActing(null);
         }}
         onOk={handleApproveWithdrawal}
-        okText="Approve"
+        okText={label("Approve")}
         confirmLoading={withdrawalActingLoading}
         destroyOnClose
       >
-        <div className="mb-2"><strong>Request ID:</strong> {withdrawalActing?._id}</div>
-        <div className="mb-2"><strong>Amount:</strong> {withdrawalActing?.amount}</div>
+        <div className="mb-2"><strong>{label("Request ID")}:</strong> {withdrawalActing?._id}</div>
+        <div className="mb-2"><strong>{label("Amount")}:</strong> {withdrawalActing?.amount}</div>
         {upper(withdrawalActing?.paymentMethod) === "STRIPE" ? (
-          <div className="mb-2"><strong>Stripe Connected Account:</strong> {withdrawalActing?.stripeAccountId || "Missing"}</div>
+          <div className="mb-2"><strong>{label("Stripe Connected Account")}:</strong> {withdrawalActing?.stripeAccountId || label("Missing")}</div>
         ) : null}
-        <div className="mb-2">Withdrawal fee percent (optional)</div>
+        <div className="mb-2">{label("Withdrawal fee percent (optional)")}</div>
         <InputNumber
           min={0}
           max={100}
@@ -4677,8 +4699,8 @@ const AdminEntityListPage = ({ entity }) => {
             const net = amount - fee;
             return (
               <div>
-                <div className="mb-1"><strong>Fee:</strong> {fee.toFixed(2)}</div>
-                <div className="mb-1"><strong>Net payout:</strong> {net.toFixed(2)}</div>
+                <div className="mb-1"><strong>{label("Fee")}:</strong> {fee.toFixed(2)}</div>
+                <div className="mb-1"><strong>{label("Net payout")}:</strong> {net.toFixed(2)}</div>
               </div>
             );
           })()}
@@ -4687,21 +4709,21 @@ const AdminEntityListPage = ({ entity }) => {
 
       <Modal
         open={withdrawalRejectOpen}
-        title="Reject Withdrawal"
+        title={label("Reject Withdrawal")}
         onCancel={() => {
           setWithdrawalRejectOpen(false);
           setWithdrawalActing(null);
         }}
         onOk={handleRejectWithdrawal}
-        okText="Reject"
+        okText={label("Reject")}
         confirmLoading={withdrawalActingLoading}
         destroyOnClose
       >
-        <div className="mb-2"><strong>Request ID:</strong> {withdrawalActing?._id}</div>
-        <div className="mb-2"><strong>Amount:</strong> {withdrawalActing?.amount}</div>
+        <div className="mb-2"><strong>{label("Request ID")}:</strong> {withdrawalActing?._id}</div>
+        <div className="mb-2"><strong>{label("Amount")}:</strong> {withdrawalActing?.amount}</div>
         <Input.TextArea
           rows={3}
-          placeholder="Reason"
+          placeholder={label("Reason")}
           value={withdrawalRejectReason}
           onChange={(e) => setWithdrawalRejectReason(e.target.value)}
         />
@@ -4710,13 +4732,13 @@ const AdminEntityListPage = ({ entity }) => {
       {entity === "vaccines" ? (
         <Modal
           open={vaccineModalOpen}
-          title={vaccineEditing?._id ? "Edit Vaccine" : "Add Vaccine"}
+          title={label(vaccineEditing?._id ? "Edit Vaccine" : "Add Vaccine")}
           onCancel={() => {
             setVaccineModalOpen(false);
             setVaccineEditing(null);
           }}
           onOk={handleSaveVaccine}
-          okText={vaccineEditing?._id ? "Save" : "Create"}
+          okText={label(vaccineEditing?._id ? "Save" : "Create")}
           confirmLoading={vaccineSaving}
           destroyOnClose
         >
@@ -4732,39 +4754,39 @@ const AdminEntityListPage = ({ entity }) => {
             }}
           >
             <Form.Item
-              label="Name"
+              label={label("Name")}
               name="name"
-              rules={[{ required: true, message: "Name is required" }]}
+              rules={[{ required: true, message: label("Name is required") }]}
             >
               <Input />
             </Form.Item>
 
             <Form.Item
-              label="Applicable Species"
+              label={label("Applicable Species")}
               name="applicableSpecies"
-              rules={[{ required: true, message: "Select at least one species" }]}
+              rules={[{ required: true, message: label("Select at least one species") }]}
             >
               <Select
                 mode="multiple"
                 options={[
-                  { value: "DOG", label: "DOG" },
-                  { value: "CAT", label: "CAT" },
-                  { value: "BIRD", label: "BIRD" },
-                  { value: "RABBIT", label: "RABBIT" },
-                  { value: "OTHER", label: "OTHER" },
+                  { value: "DOG", label: label("DOG") },
+                  { value: "CAT", label: label("CAT") },
+                  { value: "BIRD", label: label("BIRD") },
+                  { value: "RABBIT", label: label("RABBIT") },
+                  { value: "OTHER", label: label("OTHER") },
                 ]}
               />
             </Form.Item>
 
-            <Form.Item label="Min Age (weeks)" name="minAgeWeeks">
+            <Form.Item label={label("Min Age (weeks)")} name="minAgeWeeks">
               <InputNumber min={0} className="w-100" />
             </Form.Item>
 
-            <Form.Item label="Doses Required" name="dosesRequired">
+            <Form.Item label={label("Doses Required")} name="dosesRequired">
               <InputNumber min={1} className="w-100" />
             </Form.Item>
 
-            <Form.Item label="Active" name="isActive" valuePropName="checked">
+            <Form.Item label={label("Active")} name="isActive" valuePropName="checked">
               <Switch />
             </Form.Item>
           </Form>
@@ -4774,13 +4796,13 @@ const AdminEntityListPage = ({ entity }) => {
       {entity === "subscriptionPlans" ? (
         <Modal
           open={planModalOpen}
-          title={planEditing?._id ? "Edit Plan Price" : "Edit Plan"}
+          title={label(planEditing?._id ? "Edit Plan Price" : "Edit Plan")}
           onCancel={() => {
             setPlanModalOpen(false);
             setPlanEditing(null);
           }}
           onOk={handleSavePlan}
-          okText="Save"
+          okText={label("Save")}
           confirmLoading={planSaving}
           destroyOnClose
         >
@@ -4789,13 +4811,13 @@ const AdminEntityListPage = ({ entity }) => {
             layout="vertical"
             initialValues={{ price: 0 }}
           >
-            <Form.Item label="Plan" >
+            <Form.Item label={label("Plan")} >
               <Input value={planEditing?.name || ""} disabled />
             </Form.Item>
             <Form.Item
-              label="Price"
+              label={label("Price")}
               name="price"
-              rules={[{ required: true, message: "Price is required" }]}
+               rules={[{ required: true, message: label("Price is required") }]}
             >
               <InputNumber min={0} className="w-100" />
             </Form.Item>
@@ -4806,13 +4828,13 @@ const AdminEntityListPage = ({ entity }) => {
       {entity === "specializations" ? (
         <Modal
           open={specializationModalOpen}
-          title={specializationEditing?._id ? "Edit Specialization" : "Add Specialization"}
+          title={label(specializationEditing?._id ? "Edit Specialization" : "Add Specialization")}
           onCancel={() => {
             setSpecializationModalOpen(false);
             setSpecializationEditing(null);
           }}
           onOk={handleSaveSpecialization}
-          okText={specializationEditing?._id ? "Save" : "Create"}
+          okText={label(specializationEditing?._id ? "Save" : "Create")}
           confirmLoading={specializationSaving}
           destroyOnClose
         >
@@ -4822,19 +4844,19 @@ const AdminEntityListPage = ({ entity }) => {
             initialValues={{ name: "", slug: "", description: "", icon: "", type: "" }}
           >
             <Form.Item
-              label="Name"
+              label={label("Name")}
               name="name"
-              rules={[{ required: true, message: "Name is required" }]}
+              rules={[{ required: true, message: label("Name is required") }]}
             >
               <Input />
             </Form.Item>
-            <Form.Item label="Slug" name="slug">
+            <Form.Item label={label("Slug")} name="slug">
               <Input />
             </Form.Item>
-            <Form.Item label="Type" name="type">
+            <Form.Item label={label("Type")} name="type">
               <Input />
             </Form.Item>
-            <Form.Item label="Icon" name="icon">
+            <Form.Item label={label("Icon")} name="icon">
               <div className="d-flex gap-2">
                 <Input />
                 <button
@@ -4843,7 +4865,7 @@ const AdminEntityListPage = ({ entity }) => {
                   disabled={uploading}
                   onClick={() => specializationIconPickerRef.current?.click()}
                 >
-                  Upload
+                  {label("Upload")}
                 </button>
                 <input
                   ref={specializationIconPickerRef}
@@ -4869,12 +4891,12 @@ const AdminEntityListPage = ({ entity }) => {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Preview
+                    {label("Preview")}
                   </a>
                 </div>
               ) : null}
             </Form.Item>
-            <Form.Item label="Description" name="description">
+            <Form.Item label={label("Description")} name="description">
               <Input.TextArea rows={3} />
             </Form.Item>
           </Form>
@@ -4884,13 +4906,13 @@ const AdminEntityListPage = ({ entity }) => {
       {entity === "insuranceCompanies" ? (
         <Modal
           open={insuranceModalOpen}
-          title={insuranceEditing?._id ? "Edit Insurance Company" : "Add Insurance Company"}
+          title={label(insuranceEditing?._id ? "Edit Insurance Company" : "Add Insurance Company")}
           onCancel={() => {
             setInsuranceModalOpen(false);
             setInsuranceEditing(null);
           }}
           onOk={handleSaveInsurance}
-          okText={insuranceEditing?._id ? "Save" : "Create"}
+          okText={label(insuranceEditing?._id ? "Save" : "Create")}
           confirmLoading={insuranceSaving}
           destroyOnClose
         >
@@ -4900,13 +4922,13 @@ const AdminEntityListPage = ({ entity }) => {
             initialValues={{ name: "", logo: "", isActive: true }}
           >
             <Form.Item
-              label="Name"
+              label={label("Name")}
               name="name"
-              rules={[{ required: true, message: "Name is required" }]}
+              rules={[{ required: true, message: label("Name is required") }]}
             >
               <Input />
             </Form.Item>
-            <Form.Item label="Logo" name="logo">
+            <Form.Item label={label("Logo")} name="logo">
               <div className="d-flex gap-2">
                 <Input />
                 <button
@@ -4915,7 +4937,7 @@ const AdminEntityListPage = ({ entity }) => {
                   disabled={uploading}
                   onClick={() => insuranceLogoPickerRef.current?.click()}
                 >
-                  Upload
+                  {label("Upload")}
                 </button>
                 <input
                   ref={insuranceLogoPickerRef}
@@ -4941,12 +4963,12 @@ const AdminEntityListPage = ({ entity }) => {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Preview
+                    {label("Preview")}
                   </a>
                 </div>
               ) : null}
             </Form.Item>
-            <Form.Item label="Active" name="isActive" valuePropName="checked">
+            <Form.Item label={label("Active")} name="isActive" valuePropName="checked">
               <Switch />
             </Form.Item>
           </Form>
@@ -4956,13 +4978,13 @@ const AdminEntityListPage = ({ entity }) => {
       {entity === "announcements" ? (
         <Modal
           open={announcementModalOpen}
-          title={announcementEditing?._id ? "Edit Announcement" : "Add Announcement"}
+          title={label(announcementEditing?._id ? "Edit Announcement" : "Add Announcement")}
           onCancel={() => {
             setAnnouncementModalOpen(false);
             setAnnouncementEditing(null);
           }}
           onOk={handleSaveAnnouncement}
-          okText={announcementEditing?._id ? "Save" : "Create"}
+          okText={label(announcementEditing?._id ? "Save" : "Create")}
           confirmLoading={announcementSaving}
           destroyOnClose
         >
@@ -4990,26 +5012,26 @@ const AdminEntityListPage = ({ entity }) => {
             }}
           >
             <Form.Item
-              label="Title"
+              label={label("Title")}
               name="title"
-              rules={[{ required: true, message: "Title is required" }]}
+              rules={[{ required: true, message: label("Title is required") }]}
             >
               <Input />
             </Form.Item>
 
             <Form.Item
-              label="Message"
+              label={label("Message")}
               name="message"
-              rules={[{ required: true, message: "Message is required" }]}
+              rules={[{ required: true, message: label("Message is required") }]}
             >
               <Input.TextArea rows={4} />
             </Form.Item>
 
-            <Form.Item label="Link" name="link">
+            <Form.Item label={label("Link")} name="link">
               <Input />
             </Form.Item>
 
-            <Form.Item label="Image" name="image">
+            <Form.Item label={label("Image")} name="image">
               <div className="d-flex gap-2">
                 <Input />
                 <button
@@ -5018,7 +5040,7 @@ const AdminEntityListPage = ({ entity }) => {
                   disabled={uploading}
                   onClick={() => announcementImagePickerRef.current?.click()}
                 >
-                  Upload
+                  {label("Upload")}
                 </button>
                 <input
                   ref={announcementImagePickerRef}
@@ -5044,13 +5066,13 @@ const AdminEntityListPage = ({ entity }) => {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Preview
+                    {label("Preview")}
                   </a>
                 </div>
               ) : null}
             </Form.Item>
 
-            <Form.Item label="File" name="file">
+            <Form.Item label={label("File")} name="file">
               <div className="d-flex gap-2">
                 <Input />
                 <button
@@ -5059,7 +5081,7 @@ const AdminEntityListPage = ({ entity }) => {
                   disabled={uploading}
                   onClick={() => announcementFilePickerRef.current?.click()}
                 >
-                  Upload
+                  {label("Upload")}
                 </button>
                 <input
                   ref={announcementFilePickerRef}
@@ -5084,58 +5106,58 @@ const AdminEntityListPage = ({ entity }) => {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Preview
+                    {label("Preview")}
                   </a>
                 </div>
               ) : null}
             </Form.Item>
 
-            <Form.Item label="Priority" name="priority">
+            <Form.Item label={label("Priority")} name="priority">
               <Select
                 options={[
-                  { value: "NORMAL", label: "NORMAL" },
-                  { value: "IMPORTANT", label: "IMPORTANT" },
-                  { value: "URGENT", label: "URGENT" },
+                  { value: "NORMAL", label: label("NORMAL") },
+                  { value: "IMPORTANT", label: label("IMPORTANT") },
+                  { value: "URGENT", label: label("URGENT") },
                 ]}
               />
             </Form.Item>
 
             <Form.Item
-              label="Announcement Type"
+              label={label("Announcement Type")}
               name="announcementType"
-              rules={[{ required: true, message: "Type is required" }]}
+              rules={[{ required: true, message: label("Type is required") }]}
             >
               <Select
                 options={[
-                  { value: "BROADCAST", label: "BROADCAST" },
-                  { value: "TARGETED", label: "TARGETED" },
+                  { value: "BROADCAST", label: label("BROADCAST") },
+                  { value: "TARGETED", label: label("TARGETED") },
                 ]}
               />
             </Form.Item>
 
-            <Form.Item label="Pinned" name="isPinned" valuePropName="checked">
+            <Form.Item label={label("Pinned")} name="isPinned" valuePropName="checked">
               <Switch />
             </Form.Item>
 
-            <Form.Item label="Active" name="isActive" valuePropName="checked">
+            <Form.Item label={label("Active")} name="isActive" valuePropName="checked">
               <Switch />
             </Form.Item>
 
-            <Form.Item label="Expiry Type" name="expiryType">
+            <Form.Item label={label("Expiry Type")} name="expiryType">
               <Select
                 options={[
-                  { value: "NO_EXPIRY", label: "NO_EXPIRY" },
-                  { value: "EXPIRE_AFTER_DATE", label: "EXPIRE_AFTER_DATE" },
-                  { value: "AUTO_HIDE_AFTER_READ", label: "AUTO_HIDE_AFTER_READ" },
+                  { value: "NO_EXPIRY", label: label("NO_EXPIRY") },
+                  { value: "EXPIRE_AFTER_DATE", label: label("EXPIRE_AFTER_DATE") },
+                  { value: "AUTO_HIDE_AFTER_READ", label: label("AUTO_HIDE_AFTER_READ") },
                 ]}
               />
             </Form.Item>
 
-            <Form.Item label="Expiry Date" name="expiryDate">
+            <Form.Item label={label("Expiry Date")} name="expiryDate">
               <Input type="date" />
             </Form.Item>
 
-            <Form.Item label="Target Specializations" name="specializationIds">
+            <Form.Item label={label("Target Specializations")} name="specializationIds">
               <Select
                 mode="multiple"
                 options={(Array.isArray(specializationOptions) ? specializationOptions : []).map((s) => ({
@@ -5145,7 +5167,7 @@ const AdminEntityListPage = ({ entity }) => {
               />
             </Form.Item>
 
-            <Form.Item label="Target Subscription Plans" name="subscriptionPlanIds">
+            <Form.Item label={label("Target Subscription Plans")} name="subscriptionPlanIds">
               <Select
                 mode="multiple"
                 options={(Array.isArray(subscriptionPlanOptions) ? subscriptionPlanOptions : []).map((p) => ({
@@ -5155,17 +5177,17 @@ const AdminEntityListPage = ({ entity }) => {
               />
             </Form.Item>
 
-            <Form.Item label="Target Location City" name="locationCity">
+            <Form.Item label={label("Target Location City")} name="locationCity">
               <Input />
             </Form.Item>
-            <Form.Item label="Target Location State" name="locationState">
+            <Form.Item label={label("Target Location State")} name="locationState">
               <Input />
             </Form.Item>
-            <Form.Item label="Target Location Country" name="locationCountry">
+            <Form.Item label={label("Target Location Country")} name="locationCountry">
               <Input />
             </Form.Item>
 
-            <Form.Item label="Individual Veterinarian IDs (comma separated)" name="individualVeterinarianIds">
+            <Form.Item label={label("Individual Veterinarian IDs (comma separated)")} name="individualVeterinarianIds">
               <Input />
             </Form.Item>
           </Form>
@@ -5175,7 +5197,7 @@ const AdminEntityListPage = ({ entity }) => {
       {entity === "appointments" ? (
         <Modal
           open={appointmentDetailsOpen}
-          title="Appointment Details"
+        title={label("Appointment Details")}
           onCancel={() => {
             setAppointmentDetailsOpen(false);
             setAppointmentDetails(null);
@@ -5184,69 +5206,69 @@ const AdminEntityListPage = ({ entity }) => {
           destroyOnClose
         >
           {appointmentDetailsLoading ? (
-            <div className="py-3">Loading...</div>
+            <div className="py-3">{label("Loading...")}</div>
           ) : appointmentDetails ? (
             <div>
               <div className="mb-2">
-                <strong>Number:</strong> {appointmentDetails?.appointmentNumber || "-"}
+                <strong>{label("Number")}:</strong> {appointmentDetails?.appointmentNumber || "-"}
               </div>
               <div className="mb-2">
-                <strong>Status:</strong> {upper(appointmentDetails?.status) || "-"}
+                <strong>{label("Status")}:</strong> {statusLabel(appointmentDetails?.status)}
               </div>
               <div className="mb-2">
-                <strong>Payment:</strong> {upper(appointmentDetails?.paymentStatus) || "-"}
+                <strong>{label("Payment")}:</strong> {statusLabel(appointmentDetails?.paymentStatus)}
               </div>
               <div className="mb-2">
-                <strong>Type:</strong> {upper(appointmentDetails?.bookingType) || "-"}
+                <strong>{label("Type")}:</strong> {label(upper(appointmentDetails?.bookingType) || "-")}
               </div>
               <div className="mb-2">
-                <strong>Date:</strong> {formatDate(appointmentDetails?.appointmentDate) || "-"}
+                <strong>{label("Date")}:</strong> {formatDate(appointmentDetails?.appointmentDate) || "-"}
               </div>
               <div className="mb-2">
-                <strong>Time:</strong> {appointmentDetails?.appointmentTime || "-"}
+                <strong>{label("Time")}:</strong> {appointmentDetails?.appointmentTime || "-"}
               </div>
               <div className="mb-2">
-                <strong>Duration:</strong> {appointmentDetails?.appointmentDuration || "-"}
+                <strong>{label("Duration")}:</strong> {appointmentDetails?.appointmentDuration || "-"}
               </div>
               <div className="mb-2">
-                <strong>Veterinarian:</strong> {appointmentDetails?.veterinarianId?.name || "-"}
+                <strong>{label("Veterinarian")}:</strong> {appointmentDetails?.veterinarianId?.name || "-"}
               </div>
               <div className="mb-2">
-                <strong>Pet Owner:</strong> {appointmentDetails?.petOwnerId?.name || "-"}
+                <strong>{label("Pet Owner")}:</strong> {appointmentDetails?.petOwnerId?.name || "-"}
               </div>
               <div className="mb-2">
-                <strong>Pet:</strong> {appointmentDetails?.petId?.name || "-"}
+                <strong>{label("Pet")}:</strong> {appointmentDetails?.petId?.name || "-"}
               </div>
               <div className="mb-2">
-                <strong>Reason:</strong> {appointmentDetails?.reason || "-"}
+                <strong>{label("Reason")}:</strong> {appointmentDetails?.reason || "-"}
               </div>
               <div className="mb-2">
-                <strong>Symptoms:</strong> {appointmentDetails?.petSymptoms || "-"}
+                <strong>{label("Symptoms")}:</strong> {appointmentDetails?.petSymptoms || "-"}
               </div>
               <div className="mb-2">
-                <strong>Clinic:</strong> {appointmentDetails?.clinicName || "-"}
+                <strong>{label("Clinic")}:</strong> {appointmentDetails?.clinicName || "-"}
               </div>
               <div className="mb-2">
-                <strong>Notes:</strong> {appointmentDetails?.notes || "-"}
+                <strong>{label("Notes")}:</strong> {appointmentDetails?.notes || "-"}
               </div>
               <div className="mb-2">
-                <strong>Emergency:</strong> {appointmentDetails?.isEmergency ? "YES" : "NO"}
+                <strong>{label("Emergency")}:</strong> {appointmentDetails?.isEmergency ? label("YES") : label("NO")}
               </div>
               {appointmentDetails?.isEmergency ? (
                 <>
                   <div className="mb-2">
-                    <strong>Priority:</strong> {upper(appointmentDetails?.emergencyPriority) || "-"}
+                    <strong>{label("Priority")}:</strong> {label(upper(appointmentDetails?.emergencyPriority) || "-")}
                   </div>
                   <div className="mb-2">
-                    <strong>Description:</strong> {appointmentDetails?.emergencyDescription || "-"}
+                    <strong>{label("Description")}:</strong> {appointmentDetails?.emergencyDescription || "-"}
                   </div>
                 </>
               ) : null}
               <div className="mb-2">
-                <strong>Video Call Link:</strong>{" "}
+                <strong>{label("Video Call Link")}:</strong>{" "}
                 {appointmentDetails?.videoCallLink ? (
                   <a href={appointmentDetails.videoCallLink} target="_blank" rel="noreferrer">
-                    Open
+                    {label("Open")}
                   </a>
                 ) : (
                   "-"
@@ -5254,7 +5276,7 @@ const AdminEntityListPage = ({ entity }) => {
               </div>
             </div>
           ) : (
-            <div className="py-3">No details available</div>
+            <div className="py-3">{label("No details available")}</div>
           )}
         </Modal>
       ) : null}

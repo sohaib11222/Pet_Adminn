@@ -13,8 +13,11 @@ import {
   settingicon01,
   noteicon1,
 } from "./imagepath";
+import LanguageToggle from "./common/LanguageToggle";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const Header = () => {
+  const { t } = useLanguage();
   const headerLogo = `${process.env.PUBLIC_URL}/pet-logo.jpg`;
 
   const handlesidebar = () => {
@@ -74,7 +77,7 @@ const Header = () => {
             <input
               type="text"
               className="form-control"
-              placeholder="Search here"
+              placeholder={t("common.searchHere")}
             />
             <Link className="btn">
               <img src={searchnormal} alt="" />
@@ -106,6 +109,9 @@ const Header = () => {
             </Link>
           </div>
         </div> */}
+        <div className="admin-header-language">
+          <LanguageToggle />
+        </div>
       </div>
 
       {/* Notifications */}

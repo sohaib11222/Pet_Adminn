@@ -24,8 +24,8 @@ import SettingsChangePassword from "./components/settings/SettingsChangePassword
 import PlatformServicesPage from "./components/admin/PlatformServicesPage";
 import RequireAdmin from "./components/auth/RequireAdmin";
 import Logout from "./components/auth/Logout";
-import AdminGoogleTranslate from "./components/admin/AdminGoogleTranslate";
 import { AdminNotificationsProvider } from "./components/admin/AdminNotificationsContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 //Accounts
 const Approuter = () => {
@@ -34,9 +34,9 @@ const Approuter = () => {
   return (
     <>
       <BrowserRouter basename="/">
-        <AdminNotificationsProvider>
-          <AdminGoogleTranslate />
-          <Routes>
+        <LanguageProvider>
+          <AdminNotificationsProvider>
+            <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgotpassword" element={<ForgotPassword />} />
@@ -288,8 +288,9 @@ const Approuter = () => {
               </RequireAdmin>
             }
           />
-          </Routes>
-        </AdminNotificationsProvider>
+            </Routes>
+          </AdminNotificationsProvider>
+        </LanguageProvider>
       </BrowserRouter>
       <div className="sidebar-overlay"></div>
     </>

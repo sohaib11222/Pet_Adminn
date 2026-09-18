@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import Header from "../Header";
 import Sidebar from "../Sidebar";
 import { apiRequest, getApiBaseUrl, getCurrentUser } from "../../api/client";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const avatarInitial = (person) =>
   String(person?.name || person?.fullName || person?.email || "D")
@@ -34,6 +35,7 @@ const isImage = (attachment) => {
 };
 
 const AdminDoctorChat = ({ businessMode = false }) => {
+  const { translateText: ui } = useLanguage();
   const currentUser = useMemo(() => getCurrentUser(), []);
   const currentUserId = currentUser?._id || currentUser?.id;
   const apiBaseUrl = useMemo(() => getApiBaseUrl(), []);
@@ -64,14 +66,12 @@ const AdminDoctorChat = ({ businessMode = false }) => {
   );
   const participantField = businessMode ? "businessId" : "veterinarianId";
   const participantLabel = businessMode
-    ? businessFilter === "PARAPHARMACY"
-      ? "Parapharmacy"
-      : "Pharmacy"
-    : "Veterinarian";
-  const messagesTitle = businessMode ? "Pharmacy / Parapharmacy Messages" : "Doctor Messages";
+    ? businessFilter === "PARAPHARMACY" ? ui("Parapharmacy") : ui("Pharmacy")
+    : ui("Veterinarian");
+  const messagesTitle = businessMode ? ui("Pharmacy / Parapharmacy Messages") : ui("Doctor Messages");
 
   const fileInputRef = useRef(null);
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   const toFileUrl = useCallback(
     (value) => {
@@ -112,13 +112,13 @@ const AdminDoctorChat = ({ businessMode = false }) => {
         });
       } catch (requestError) {
         if (!silent) {
-          setError(requestError?.message || "Unable to load admin messages.");
+          setError(ui(requestError?.message || "Unable to load admin messages."));
         }
       } finally {
         if (!silent) setLoadingConversations(false);
       }
     },
-    [conversationTypes]
+    [conversationTypes, ui]
   );
 
   const loadSupportUsers = useCallback(async () => {
@@ -150,12 +150,12 @@ const AdminDoctorChat = ({ businessMode = false }) => {
       setMessages(response?.data?.messages || []);
     } catch (requestError) {
       if (!silent) {
-        setError(requestError?.message || "Unable to load messages.");
+        setError(ui(requestError?.message || "Unable to load messages."));
       }
     } finally {
       if (!silent) setLoadingMessages(false);
     }
-  }, []);
+  }, [ui]);
 
   useEffect(() => {
     loadConversations();
@@ -191,7 +191,10 @@ const AdminDoctorChat = ({ businessMode = false }) => {
   }, [conversations, loadConversations, selectedConversationId]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   const selectedConversation = conversations.find(
@@ -210,12 +213,12 @@ const AdminDoctorChat = ({ businessMode = false }) => {
       });
       const conversation = response?.data;
       if (!conversation?._id) {
-        throw new Error("The conversation could not be created.");
+        throw new Error(ui("The conversation could not be created."));
       }
       setSelectedConversationId(conversation._id);
       await loadConversations(true);
     } catch (requestError) {
-      setError(requestError?.message || "Unable to start the conversation.");
+      setError(ui(requestError?.message || "Unable to start the conversation."));
     } finally {
       setStartingConversation(false);
     }
@@ -228,7 +231,7 @@ const AdminDoctorChat = ({ businessMode = false }) => {
       selectedConversation?.[participantField]?._id ||
       selectedConversation?.[participantField];
     if (!selectedConversationId || !participantId) {
-      setError(`Choose or start a ${participantLabel.toLowerCase()} conversation first.`);
+      setError(ui("Choose or start a conversation first."));
       return;
     }
 
@@ -251,7 +254,7 @@ const AdminDoctorChat = ({ businessMode = false }) => {
         loadConversations(true),
       ]);
     } catch (requestError) {
-      setError(requestError?.message || "Unable to send the message.");
+      setError(ui(requestError?.message || "Unable to send the message."));
     } finally {
       setSending(false);
     }
@@ -261,12 +264,12 @@ const AdminDoctorChat = ({ businessMode = false }) => {
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
     if (!selectedConversationId) {
-      setError(`Choose or start a ${participantLabel.toLowerCase()} conversation before attaching files.`);
+      setError(ui("Choose or start a conversation before attaching files."));
       event.target.value = "";
       return;
     }
     if (files.some((file) => file.size > 50 * 1024 * 1024)) {
-      setError("Each attachment must be 50 MB or smaller.");
+      setError(ui("Each attachment must be 50 MB or smaller."));
       event.target.value = "";
       return;
     }
@@ -284,7 +287,7 @@ const AdminDoctorChat = ({ businessMode = false }) => {
           timeoutMs: 120000,
         });
         const url = response?.data?.url || response?.url;
-        if (!url) throw new Error(`Unable to upload ${file.name}.`);
+        if (!url) throw new Error(ui("Unable to upload file."));
         attachments.push({
           type: file.type?.startsWith("image/") ? "image" : "file",
           url,
@@ -295,7 +298,7 @@ const AdminDoctorChat = ({ businessMode = false }) => {
       }
       await sendMessage(attachments);
     } catch (requestError) {
-      setError(requestError?.message || "Unable to upload the selected files.");
+      setError(ui(requestError?.message || "Unable to upload the selected files."));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -310,7 +313,7 @@ const AdminDoctorChat = ({ businessMode = false }) => {
       ? [
           {
             url: chatMessage.fileUrl,
-            name: chatMessage.fileName || "Attachment",
+            name: chatMessage.fileName || "",
             type: "file",
           },
         ]
@@ -325,11 +328,11 @@ const AdminDoctorChat = ({ businessMode = false }) => {
         <div className="content admin-chat-page">
           <div className="page-header">
             <div>
-              <h3>{messagesTitle}</h3>
-              <p>
-                {businessMode
-                  ? "Secure conversations and file sharing with pharmacies and parapharmacies."
-                  : "Secure conversations and file sharing with veterinarians."}
+                <h3>{messagesTitle}</h3>
+                <p>
+                  {businessMode
+                  ? ui("Secure conversations and file sharing with pharmacies and parapharmacies.")
+                  : ui("Secure conversations and file sharing with veterinarians.")}
               </p>
             </div>
             {businessMode ? (
@@ -337,10 +340,10 @@ const AdminDoctorChat = ({ businessMode = false }) => {
                 className="form-select admin-chat-start-select"
                 value={businessFilter}
                 onChange={(event) => setBusinessFilter(event.target.value)}
-                aria-label="Choose Pharmacy or Parapharmacy conversations"
+                aria-label={ui("Choose Pharmacy or Parapharmacy conversations")}
               >
-                <option value="PET_STORE">Pharmacy</option>
-                <option value="PARAPHARMACY">Parapharmacy</option>
+                <option value="PET_STORE">{ui("Pharmacy")}</option>
+                <option value="PARAPHARMACY">{ui("Parapharmacy")}</option>
               </select>
             ) : null}
             <select
@@ -353,7 +356,7 @@ const AdminDoctorChat = ({ businessMode = false }) => {
                 startConversation(participantId);
               }}
             >
-              <option value="">Start a conversation with a {participantLabel.toLowerCase()}</option>
+              <option value="">{businessMode ? (businessFilter === "PARAPHARMACY" ? ui("Start a conversation with a parapharmacy") : ui("Start a conversation with a pharmacy")) : ui("Start a conversation with a veterinarian")}</option>
               {supportUsers.map((supportUser) => (
                 <option key={supportUser._id} value={supportUser._id}>
                   {displayName(supportUser, participantLabel)}
@@ -366,9 +369,9 @@ const AdminDoctorChat = ({ businessMode = false }) => {
 
           <div className="admin-chat-layout">
             <aside className="admin-chat-conversation-list">
-              <div className="admin-chat-list-title">Conversations</div>
+              <div className="admin-chat-list-title">{ui("Conversations")}</div>
               {loadingConversations ? (
-                <div className="admin-chat-empty">Loading conversations…</div>
+                <div className="admin-chat-empty">{ui("Loading conversations...")}</div>
               ) : conversations.length ? (
                 conversations.map((conversation) => {
                   const participant = conversation?.[participantField];
@@ -387,7 +390,7 @@ const AdminDoctorChat = ({ businessMode = false }) => {
                           {displayName(participant, participantLabel)}
                         </span>
                         <span className="admin-chat-conversation-preview">
-                          {conversation?.lastMessage?.message || "No messages yet"}
+                          {conversation?.lastMessage?.message || ui("No messages yet")}
                         </span>
                       </span>
                       <span className="admin-chat-conversation-meta">
@@ -401,7 +404,7 @@ const AdminDoctorChat = ({ businessMode = false }) => {
                 })
               ) : (
                 <div className="admin-chat-empty">
-                  No {participantLabel.toLowerCase()} messages yet. Start one using the selector above.
+                  {ui("No messages yet. Start one using the selector above.")}
                 </div>
               )}
             </aside>
@@ -418,9 +421,9 @@ const AdminDoctorChat = ({ businessMode = false }) => {
                       <small>{participantLabel}</small>
                     </span>
                   </header>
-                  <div className="admin-chat-messages">
+                  <div ref={messagesContainerRef} className="admin-chat-messages">
                     {loadingMessages ? (
-                      <div className="admin-chat-empty">Loading messages…</div>
+                      <div className="admin-chat-empty">{ui("Loading messages...")}</div>
                     ) : messages.length ? (
                       messages.map((chatMessage) => {
                         const ownMessage =
@@ -444,7 +447,7 @@ const AdminDoctorChat = ({ businessMode = false }) => {
                                   >
                                     <img
                                       src={toFileUrl(attachment.url)}
-                                      alt={attachment.name || "Attachment"}
+                                      alt={attachment.name || ui("Attachment")}
                                     />
                                   </a>
                                 ) : (
@@ -456,7 +459,7 @@ const AdminDoctorChat = ({ businessMode = false }) => {
                                     key={`${chatMessage._id}-${index}`}
                                   >
                                     <i className="fa-solid fa-paperclip" aria-hidden="true" />
-                                    <span>{attachment.name || "Open attachment"}</span>
+                                    <span>{attachment.name || ui("Open attachment")}</span>
                                     <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" />
                                   </a>
                                 )
@@ -467,9 +470,8 @@ const AdminDoctorChat = ({ businessMode = false }) => {
                         );
                       })
                     ) : (
-                      <div className="admin-chat-empty">No messages yet. Say hello.</div>
+                      <div className="admin-chat-empty">{ui("No messages yet. Say hello.")}</div>
                     )}
-                    <div ref={messagesEndRef} />
                   </div>
                   <form
                     className="admin-chat-compose"
@@ -488,7 +490,7 @@ const AdminDoctorChat = ({ businessMode = false }) => {
                     <button
                       type="button"
                       className="admin-chat-icon-button"
-                      aria-label="Attach files"
+                      aria-label={ui("Attach files")}
                       disabled={uploading || sending}
                       onClick={() => fileInputRef.current?.click()}
                     >
@@ -497,7 +499,7 @@ const AdminDoctorChat = ({ businessMode = false }) => {
                     <input
                       value={message}
                       onChange={(event) => setMessage(event.target.value)}
-                      placeholder="Write a secure message…"
+                      placeholder={ui("Write a secure message...")}
                       disabled={uploading}
                     />
                     <button
@@ -505,13 +507,13 @@ const AdminDoctorChat = ({ businessMode = false }) => {
                       type="submit"
                       disabled={sending || uploading || !message.trim()}
                     >
-                      {uploading ? "Uploading…" : sending ? "Sending…" : "Send"}
+                      {uploading ? ui("Uploading...") : sending ? ui("Sending...") : ui("Send")}
                     </button>
                   </form>
                 </>
               ) : (
                 <div className="admin-chat-empty admin-chat-empty--thread">
-                  Select a conversation or start a new {participantLabel.toLowerCase()} conversation.
+                  {ui("Select a conversation or start a new conversation.")}
                 </div>
               )}
             </section>
